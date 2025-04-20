@@ -544,6 +544,94 @@
       {"month": "Ноя", "value": 920000},
       {"month": "Дек", "value": 1050000}
     ],
+    "monthly_stock_movement": {
+      "incoming": [25, 30, 40, 35, 45, 50, 60, 55, 45, 40, 50, 65],
+      "outgoing": [15, 20, 25, 30, 35, 40, 45, 40, 35, 30, 35, 45]
+    },
+    "product_movement": [
+      {
+        "product_id": 1,
+        "name": "Ноутбук HP ProBook",
+        "initial_quantity": 15,
+        "incoming": 20,
+        "outgoing": 10,
+        "final_quantity": 25
+      },
+      {
+        "product_id": 2,
+        "name": "Монитор Dell 27\"",
+        "initial_quantity": 30,
+        "incoming": 20,
+        "outgoing": 10,
+        "final_quantity": 40
+      },
+      {
+        "product_id": 3,
+        "name": "Смартфон Samsung Galaxy S21",
+        "initial_quantity": 10,
+        "incoming": 15,
+        "outgoing": 10,
+        "final_quantity": 15
+      },
+      {
+        "product_id": 4,
+        "name": "Наушники Sony WH-1000XM4",
+        "initial_quantity": 15,
+        "incoming": 15,
+        "outgoing": 10,
+        "final_quantity": 20
+      },
+      {
+        "product_id": 5,
+        "name": "Клавиатура Logitech MX Keys",
+        "initial_quantity": 20,
+        "incoming": 20,
+        "outgoing": 10,
+        "final_quantity": 30
+      }
+    ],
+    "turnover_metrics": [
+      {
+        "product_id": 1,
+        "name": "Ноутбук HP ProBook",
+        "average_stock": 20,
+        "sales_volume": 1125000,
+        "turnover_rate": 8.5,
+        "turnover_days": 43
+      },
+      {
+        "product_id": 3,
+        "name": "Смартфон Samsung Galaxy S21",
+        "average_stock": 12,
+        "sales_volume": 1080000,
+        "turnover_rate": 7.2,
+        "turnover_days": 51
+      },
+      {
+        "product_id": 2,
+        "name": "Монитор Dell 27\"",
+        "average_stock": 35,
+        "sales_volume": 270000,
+        "turnover_rate": 3.8,
+        "turnover_days": 96
+      },
+      {
+        "product_id": 6,
+        "name": "Мышь Logitech MX Master 3",
+        "average_stock": 30,
+        "sales_volume": 90000,
+        "turnover_rate": 6.5,
+        "turnover_days": 56
+      },
+      {
+        "product_id": 4,
+        "name": "Наушники Sony WH-1000XM4",
+        "average_stock": 15,
+        "sales_volume": 280000,
+        "turnover_rate": 5.2,
+        "turnover_days": 70
+      }
+    ],
     "top_selling_products": [
       {"id": 1, "name": "Ноутбук HP ProBook", "sales": 25},
       {"id": 3, "name": "Смартфон Samsung Galaxy S21", "sales": 18},

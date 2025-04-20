@@ -5,7 +5,9 @@
         <h1 class="page-title">О компании СмартСклад</h1>
         
         <div class="about-content">
-          <div class="about-image"></div>
+          <div class="about-image">
+            <img src="https://img.recraft.ai/ooYfFHZRHBtieqPRnviR3nXlXQVIMvWRfqMC_ng_DoQ/rs:fit:1024:1024:0/q:95/g:no/plain/abs://prod/images/b4137806-3a2e-4ed9-85ef-9f9d0a0c8f00@jpg" alt="СмартСклад" class="about-image-img">
+          </div>
           
           <div class="about-text">
             <p>
@@ -82,6 +84,12 @@ import DefaultLayout from '@/components/layout/DefaultLayout.vue';
   background-image: url('/placeholder-company.jpg');
   background-size: cover;
   background-position: center;
+}
+
+.about-image-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .about-text {

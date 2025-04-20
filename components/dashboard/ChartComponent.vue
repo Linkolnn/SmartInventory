@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, onUnmounted } from 'vue';
 import Chart from 'chart.js/auto';
 
 const props = defineProps({
@@ -31,6 +31,11 @@ let chartInstance = null;
 onMounted(() => {
   if (chartCanvas.value) {
     createChart();
+    
+    // Добавляем обработчик изменения размера для перерисовки графика
+    if (process.client) {
+      window.addEventListener('resize', handleResize);
+    }
   }
 });
 
@@ -50,6 +55,13 @@ watch(() => props.type, () => {
   }
 });
 
+// Обработчик изменения размера окна
+const handleResize = () => {
+  if (chartInstance) {
+    chartInstance.resize();
+  }
+};
+
 // Функция создания графика
 const createChart = () => {
   const ctx = chartCanvas.value.getContext('2d');
@@ -60,12 +72,47 @@ const createChart = () => {
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          boxWidth: 10,
+          font: {
+            size: window.innerWidth <= 320 ? 8 : 
+                 window.innerWidth <= 480 ? 10 : 12
+          }
+        },
       },
       tooltip: {
         mode: 'index',
         intersect: false,
+        titleFont: {
+          size: window.innerWidth <= 320 ? 10 : 
+               window.innerWidth <= 480 ? 12 : 14
+        },
+        bodyFont: {
+          size: window.innerWidth <= 320 ? 9 : 
+               window.innerWidth <= 480 ? 11 : 13
+        },
+        padding: window.innerWidth <= 320 ? 4 : 
+                window.innerWidth <= 480 ? 6 : 8
       }
-    }
+    },
+    scales: props.type !== 'doughnut' && props.type !== 'pie' ? {
+      x: {
+        ticks: {
+          font: {
+            size: window.innerWidth <= 320 ? 8 : 
+                 window.innerWidth <= 480 ? 10 : 12
+          }
+        }
+      },
+      y: {
+        ticks: {
+          font: {
+            size: window.innerWidth <= 320 ? 8 : 
+                 window.innerWidth <= 480 ? 10 : 12
+          }
+        }
+      }
+    } : undefined
   };
   
   chartInstance = new Chart(ctx, {
@@ -74,6 +121,14 @@ const createChart = () => {
     options: { ...defaultOptions, ...props.options }
   });
 };
+
+// Очищаем обработчики событий при удалении компонента
+onUnmounted(() => {
+  if (process.client && chartInstance) {
+    window.removeEventListener('resize', handleResize);
+    chartInstance.destroy();
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -82,5 +137,13 @@ const createChart = () => {
   height: 100%;
   min-height: 300px;
   position: relative;
+  
+  @media (max-width: 480px) {
+    min-height: 250px;
+  }
+  
+  @media (max-width: 320px) {
+    min-height: 200px;
+  }
 }
 </style> 

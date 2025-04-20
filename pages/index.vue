@@ -10,7 +10,7 @@
         </div>
       </div>
       <div class="hero-image">
-        <!-- Здесь будет изображение системы -->
+        <img src="https://img.recraft.ai/OISE48BEQSu5ecJoKzcnzgWJjeRxjt1LBCQUzjN07rQ/rs:fit:1024:1024:0/q:95/g:no/plain/abs://prod/images/8699b44b-6f9d-4e5d-aee7-c65d292b1dc8@jpg" alt="СмартСклад" class="hero-image-img">
       </div>
     </section>
 
@@ -154,6 +154,12 @@ onMounted(() => {
     width: 100%;
     max-width: 500px;
   }
+}
+
+.hero-image-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .section-title {

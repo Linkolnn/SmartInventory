@@ -15,26 +15,35 @@
       </div>
       
       <nav class="main-nav" :class="{ 'mobile-active': showMobileMenu }">
+        <!-- Мобильный блок пользователя в начале меню -->
+        <div v-if="showMobileMenu" class="mobile-user-actions">
+          <div v-if="authStore.isAuthenticated" class="mobile-user-profile">
+            <ClientOnly>
+              <span class="mobile-user-name">{{ authStore.user?.name || 'Пользователь' }}</span>
+            </ClientOnly>
+            <div class="mobile-user-buttons">
+              <NuxtLink to="/profile" class="mobile-profile-btn" @click="closeMobileMenu">Профиль</NuxtLink>
+              <button class="mobile-logout-btn" @click="handleLogout">Выйти</button>
+            </div>
+          </div>
+          <div v-else class="mobile-login-container">
+            <NuxtLink to="/auth/login" class="mobile-login-btn" @click="closeMobileMenu">Войти</NuxtLink>
+          </div>
+        </div>
+        
         <ul>
           <li><NuxtLink to="/" @click="closeMobileMenu">Главная</NuxtLink></li>
-          <li><NuxtLink to="/about" @click="closeMobileMenu">О нас</NuxtLink></li>
-          <li><NuxtLink to="/faq" @click="closeMobileMenu">FAQ</NuxtLink></li>
-          <li><NuxtLink to="/contact" @click="closeMobileMenu">Контакты</NuxtLink></li>
+          <li v-if="!authStore.isAuthenticated"><NuxtLink to="/about" @click="closeMobileMenu">О нас</NuxtLink></li>
+          <li v-if="!authStore.isAuthenticated"><NuxtLink to="/faq" @click="closeMobileMenu">FAQ</NuxtLink></li>
+          <li v-if="!authStore.isAuthenticated"><NuxtLink to="/contact" @click="closeMobileMenu">Контакты</NuxtLink></li>
           <li v-show="authStore.isAuthenticated"><NuxtLink to="/inventory" @click="closeMobileMenu">Склад</NuxtLink></li>
           <li v-show="authStore.isAuthenticated && authStore.isManager"><NuxtLink to="/reports" @click="closeMobileMenu">Отчеты</NuxtLink></li>
           <li v-show="authStore.isAuthenticated && authStore.isManager"><NuxtLink to="/dashboard" @click="closeMobileMenu">Дашборд</NuxtLink></li>
           
-          <!-- Мобильная версия пользовательского меню -->
-          <div class="mobile-user-actions" v-show="showMobileMenu">
-            <div v-show="authStore.isAuthenticated">
-              <li><NuxtLink to="/profile" @click="closeMobileMenu">Профиль</NuxtLink></li>
-              <li v-if="authStore.isAdmin"><NuxtLink to="/admin/users" @click="closeMobileMenu">Управление пользователями</NuxtLink></li>
-              <li><a href="#" @click.prevent="handleLogout">Выйти</a></li>
-            </div>
-            <div v-show="!authStore.isAuthenticated">
-              <li><NuxtLink to="/auth/login" class="login-link" @click="closeMobileMenu">Войти</NuxtLink></li>
-            </div>
-          </div>
+          <!-- Дополнительный элемент для администраторов -->
+          <li v-if="showMobileMenu && authStore.isAuthenticated && authStore.isAdmin">
+            <NuxtLink to="/admin/users" @click="closeMobileMenu">Управление пользователями</NuxtLink>
+          </li>
         </ul>
       </nav>
       
@@ -43,9 +52,6 @@
           <div class="user-profile" @click="toggleUserMenu">
             <ClientOnly>
               <span>{{ authStore.user?.name || 'Пользователь' }}</span>
-              <template #fallback>
-                <span>Пользователь</span>
-              </template>
             </ClientOnly>
             <div class="user-menu" v-show="showUserMenu">
               <ul>
@@ -266,12 +272,75 @@ onUnmounted(() => {
   }
 }
 
+// Новые стили для мобильного блока пользователя
 .mobile-user-actions {
-  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.mobile-user-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mobile-user-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.mobile-user-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.mobile-profile-btn {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color);
+  color: white !important;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
   
-  .login-link {
-    color: var(--primary-color);
-    font-weight: 600;
+  &:hover {
+    background-color: darken(#3b82f6, 10%);
+  }
+}
+
+.mobile-logout-btn {
+  padding: 0.5rem 1rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: darken(#ef4444, 10%);
+  }
+}
+
+.mobile-login-container {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.mobile-login-btn {
+  padding: 0.5rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white !important;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: darken(#3b82f6, 10%);
   }
 }
 
@@ -317,5 +386,11 @@ onUnmounted(() => {
   .header-container {
     padding: 0 1rem;
   }
+}
+
+/* Add style for auth placeholder */
+.auth-placeholder {
+  width: 80px;
+  height: 36px;
 }
 </style> 

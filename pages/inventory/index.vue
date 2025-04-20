@@ -5,8 +5,8 @@
         <h1 class="page-title">Управление складом</h1>
         <div class="inventory-actions">
           <button class="btn btn-primary" @click="showAddItemModal = true">Добавить товар</button>
-          <button class="btn btn-secondary">Экспорт</button>
-          <button class="btn btn-secondary">Печать</button>
+          <button class="btn btn-secondary" @click="exportToExcel">Экспорт</button>
+          <button class="btn btn-secondary" @click="printInventory">Печать</button>
         </div>
       </div>
       
@@ -85,7 +85,7 @@
         </button>
       </div>
       
-      <!-- Modal для добавления товара (в реальном проекте вынесем в компонент) -->
+      <!-- Modal для добавления товара -->
       <div v-if="showAddItemModal" class="modal-overlay" @click="showAddItemModal = false">
         <div class="modal-content" @click.stop>
           <h2>Добавить товар</h2>
@@ -141,6 +141,64 @@
           </form>
         </div>
       </div>
+      
+      <!-- Modal для редактирования товара -->
+      <div v-if="showEditItemModal" class="modal-overlay" @click="showEditItemModal = false">
+        <div class="modal-content" @click.stop>
+          <h2>Редактировать товар</h2>
+          <form @submit.prevent="updateItem">
+            <div class="form-group">
+              <label for="editItemCode" class="form-label">Код: {{ editingItem.code }}</label>
+              <label for="editItemName" class="form-label">Наименование</label>
+              <input type="text" id="editItemName" class="form-input" v-model="editingItem.name" required />
+            </div>
+            
+            <div class="form-group">
+              <label for="editItemCategory" class="form-label">Категория</label>
+              <select id="editItemCategory" class="form-input" v-model="editingItem.category" required>
+                <option value="electronics">Электроника</option>
+                <option value="furniture">Мебель</option>
+                <option value="office">Канцтовары</option>
+                <option value="parts">Запчасти</option>
+              </select>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="editItemQuantity" class="form-label">Количество</label>
+                <input type="number" id="editItemQuantity" class="form-input" v-model="editingItem.quantity" min="0" required />
+              </div>
+              
+              <div class="form-group">
+                <label for="editItemUnit" class="form-label">Ед. изм.</label>
+                <select id="editItemUnit" class="form-input" v-model="editingItem.unit" required>
+                  <option value="шт">шт</option>
+                  <option value="кг">кг</option>
+                  <option value="л">л</option>
+                  <option value="м">м</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="editItemPrice" class="form-label">Цена</label>
+                <input type="number" id="editItemPrice" class="form-input" v-model="editingItem.price" min="0" step="0.01" required />
+              </div>
+              
+              <div class="form-group">
+                <label for="editItemMinQuantity" class="form-label">Мин. остаток</label>
+                <input type="number" id="editItemMinQuantity" class="form-input" v-model="editingItem.minQuantity" min="0" required />
+              </div>
+            </div>
+            
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" @click="showEditItemModal = false">Отмена</button>
+              <button type="submit" class="btn btn-primary">Сохранить</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
     <div v-else class="loading-container">
       <div class="loading-spinner"></div>
@@ -177,6 +235,19 @@ const showAddItemModal = ref(false);
 const newItem = ref({
   name: '',
   category: 'electronics',
+  quantity: 0,
+  unit: 'шт',
+  price: 0,
+  minQuantity: 0
+});
+
+// Состояние для модального окна редактирования
+const showEditItemModal = ref(false);
+const editingItem = ref({
+  id: 0,
+  code: '',
+  name: '',
+  category: '',
   quantity: 0,
   unit: 'шт',
   price: 0,
@@ -254,8 +325,22 @@ const addItem = () => {
 };
 
 const editItem = (item) => {
-  // В реальном проекте реализуем редактирование товара
-  console.log('Edit item:', item);
+  // Копируем данные товара в редактируемый объект
+  editingItem.value = { ...item };
+  // Открываем модальное окно редактирования
+  showEditItemModal.value = true;
+};
+
+const updateItem = () => {
+  // Находим индекс товара в массиве
+  const index = items.value.findIndex(i => i.id === editingItem.value.id);
+  
+  if (index !== -1) {
+    // Обновляем товар в массиве
+    items.value[index] = { ...editingItem.value };
+    // Закрываем модальное окно
+    showEditItemModal.value = false;
+  }
 };
 
 const confirmDeleteItem = (item) => {
@@ -263,6 +348,154 @@ const confirmDeleteItem = (item) => {
   if (confirm(`Вы уверены, что хотите удалить товар "${item.name}"?`)) {
     items.value = items.value.filter(i => i.id !== item.id);
   }
+};
+
+// Функция для экспорта данных в Excel
+const exportToExcel = () => {
+  // Формируем заголовки для CSV
+  const headers = ['Код', 'Наименование', 'Категория', 'Количество', 'Ед. изм.', 'Цена', 'Сумма', 'Мин. остаток'];
+  
+  // Формируем данные для CSV
+  const data = filteredItems.value.map(item => [
+    item.code,
+    item.name,
+    getCategoryName(item.category),
+    item.quantity,
+    item.unit,
+    item.price,
+    item.quantity * item.price,
+    item.minQuantity
+  ]);
+  
+  // Создаем CSV строку
+  let csvContent = "data:text/csv;charset=utf-8,";
+  
+  // Добавляем заголовок
+  csvContent += "Экспорт складских остатков\r\n";
+  csvContent += `Дата: ${new Date().toLocaleDateString('ru-RU')}\r\n\r\n`;
+  
+  // Добавляем заголовки столбцов
+  csvContent += headers.join(";") + "\r\n";
+  
+  // Добавляем данные
+  data.forEach(row => {
+    const formattedRow = row.map(cell => {
+      // Форматируем числовые значения
+      if (typeof cell === 'number') {
+        return cell.toLocaleString().replace('.', ',');
+      }
+      return cell;
+    });
+    csvContent += formattedRow.join(";") + "\r\n";
+  });
+  
+  // Добавляем итоговую строку
+  const totalValue = filteredItems.value.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  csvContent += `\r\nИтого: ${totalValue.toLocaleString().replace('.', ',')} ₽\r\n`;
+  
+  // Создаем ссылку для скачивания и имитируем клик
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `inventory_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+// Функция для печати инвентаря
+const printInventory = () => {
+  // Сохраняем текущий title
+  const originalTitle = document.title;
+  
+  // Устанавливаем новый title для печати
+  document.title = "Складские остатки";
+  
+  // Создаем стили для печати
+  const style = document.createElement('style');
+  style.type = 'text/css';
+  style.innerHTML = `
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      
+      .inventory-table-container, .inventory-table-container * {
+        visibility: visible;
+      }
+      
+      .inventory-table-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      
+      .action-btn, .actions-cell {
+        display: none;
+      }
+      
+      .print-header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      
+      .print-date {
+        text-align: center;
+        margin-bottom: 30px;
+        font-style: italic;
+      }
+      
+      .print-footer {
+        margin-top: 30px;
+        text-align: right;
+      }
+    }
+  `;
+  
+  document.head.appendChild(style);
+  
+  // Создаем заголовок и дату для печати
+  const header = document.createElement('div');
+  header.className = 'print-header';
+  header.innerHTML = `<h1>Складские остатки</h1>`;
+  
+  const dateInfo = document.createElement('div');
+  dateInfo.className = 'print-date';
+  dateInfo.innerHTML = `Дата: ${new Date().toLocaleDateString('ru-RU')}`;
+  
+  // Создаем подвал для печати с итогами
+  const footer = document.createElement('div');
+  footer.className = 'print-footer';
+  const totalValue = filteredItems.value.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  footer.innerHTML = `<strong>Итого:</strong> ${totalValue.toLocaleString()} ₽`;
+  
+  // Находим контейнер таблицы и вставляем информацию для печати
+  const tableContainer = document.querySelector('.inventory-table-container');
+  tableContainer.insertBefore(dateInfo, tableContainer.firstChild);
+  tableContainer.insertBefore(header, tableContainer.firstChild);
+  tableContainer.appendChild(footer);
+  
+  // Вызываем печать
+  window.print();
+  
+  // Восстанавливаем оригинальный заголовок и удаляем временные элементы
+  document.title = originalTitle;
+  tableContainer.removeChild(header);
+  tableContainer.removeChild(dateInfo);
+  tableContainer.removeChild(footer);
+  document.head.removeChild(style);
+};
+
+// Вспомогательная функция для получения названия категории
+const getCategoryName = (categoryKey) => {
+  const categories = {
+    'electronics': 'Электроника',
+    'furniture': 'Мебель',
+    'office': 'Канцтовары',
+    'parts': 'Запчасти'
+  };
+  return categories[categoryKey] || categoryKey;
 };
 
 onMounted(async () => {
@@ -350,11 +583,11 @@ onMounted(async () => {
 }
 
 .inventory-table-container {
+  width: 100%;
   overflow-x: auto;
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   margin-bottom: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .inventory-table {
@@ -362,51 +595,75 @@ onMounted(async () => {
   border-collapse: collapse;
   
   th, td {
-    padding: 1rem;
-    text-align: left;
+    padding: 0.75rem;
+    text-align: center;
     border-bottom: 1px solid #e5e7eb;
   }
   
   th {
-    background-color: #f9fafb;
-    color: #4b5563;
     font-weight: 600;
-    white-space: nowrap;
+    background-color: #f9fafb;
+    position: sticky;
+    top: 0;
   }
   
-  tr:last-child td {
-    border-bottom: none;
-  }
-  
-  tr:hover td {
-    background-color: #f3f4f6;
+  tbody tr {
+    &:hover {
+      background-color: #f3f4f6;
+    }
   }
   
   .low-stock {
-    color: var(--error-color);
+    color: #ef4444;
     font-weight: 600;
   }
   
   .actions-cell {
     white-space: nowrap;
-    width: 100px;
-  }
-}
-
-.action-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: background-color 0.2s ease;
-  
-  &:hover {
-    background-color: #e5e7eb;
   }
   
-  &.edit {
-    margin-right: 0.5rem;
+  .action-btn {
+    background: none;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.2);
+    }
+    
+    &.edit {
+      color: #3b82f6;
+    }
+    
+    &.delete {
+      color: #ef4444;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+    
+    th, td {
+      padding: 0.5rem;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    // On very small screens
+    font-size: 0.8rem;
+    
+    th, td {
+      padding: 0.4rem 0.3rem;
+    }
+    
+    th:nth-child(2), td:nth-child(2) { // Name column
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 }
 
@@ -512,6 +769,42 @@ onMounted(async () => {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+// Добавляем стили для адаптивности остальных элементов
+.inventory-actions {
+  display: flex;
+  gap: 0.5rem;
+  
+  @media (max-width: 640px) {
+    flex-direction: column;
+    width: 100%;
+    
+    .btn {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  }
+}
+
+.inventory-filters {
+  @media (max-width: 768px) {
+    flex-direction: column;
+    
+    .search-group, .filters-group {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    
+    .filters-group {
+      flex-direction: column;
+      
+      select {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+    }
   }
 }
 </style>

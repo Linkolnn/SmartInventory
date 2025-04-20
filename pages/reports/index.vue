@@ -38,9 +38,11 @@
         <div class="filter-group">
           <label class="form-label">Период</label>
           <div class="date-range">
-            <input type="date" class="form-input" v-model="startDate" />
-            <span>—</span>
-            <input type="date" class="form-input" v-model="endDate" />
+            <DateRangePicker
+              v-model:startDate="startDate"
+              v-model:endDate="endDate"
+              @change="loadData"
+            />
           </div>
         </div>
         
@@ -53,19 +55,20 @@
             <option value="office">Канцтовары</option>
             <option value="parts">Запчасти</option>
           </select>
+          <button class="btn btn-primary" @click="generateReport">Сформировать отчет</button>
         </div>
         
-        <button class="btn btn-primary" @click="generateReport">Сформировать отчет</button>
       </div>
       
-      <div class="report-content">
+      <div v-if="isDataLoaded" class="report-content">
         <!-- Отображаем содержимое в зависимости от активной вкладки -->
         <div v-if="activeTab === 'inventory'" class="inventory-report">
           <div class="chart-container">
             <h2>Распределение товаров по категориям</h2>
-            <div class="chart-placeholder">
-              Круговая диаграмма категорий
-            </div>
+            <DoughnutChart 
+              :chartData="inventoryChartData" 
+              :chartOptions="defaultChartOptions" 
+            />
           </div>
           
           <div class="report-table-container">
@@ -103,9 +106,10 @@
         <div v-else-if="activeTab === 'movement'" class="movement-report">
           <div class="chart-container">
             <h2>Динамика движения товаров</h2>
-            <div class="chart-placeholder">
-              Линейный график движения товаров
-            </div>
+            <LineChart 
+              :chartData="movementChartData" 
+              :chartOptions="defaultChartOptions" 
+            />
           </div>
           
           <div class="report-table-container">
@@ -136,9 +140,10 @@
         <div v-else-if="activeTab === 'turnover'" class="turnover-report">
           <div class="chart-container">
             <h2>Оборачиваемость товаров</h2>
-            <div class="chart-placeholder">
-              Гистограмма оборачиваемости
-            </div>
+            <BarChart 
+              :chartData="turnoverChartData" 
+              :chartOptions="defaultChartOptions" 
+            />
           </div>
           
           <div class="report-table-container">
@@ -186,16 +191,21 @@
           
           <div class="chart-container">
             <h2>Финансовые показатели по месяцам</h2>
-            <div class="chart-placeholder">
-              График финансовых показателей
-            </div>
+            <LineChart 
+              :chartData="financialChartData" 
+              :chartOptions="defaultChartOptions" 
+            />
           </div>
         </div>
       </div>
+      <div v-else-if="isContentVisible && !isDataLoaded" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Загрузка данных...</p>
+      </div>
       
       <div class="report-actions">
-        <button class="btn btn-secondary">Экспорт в Excel</button>
-        <button class="btn btn-secondary">Печать отчета</button>
+        <button class="btn btn-secondary" @click="exportToExcel">Экспорт в Excel</button>
+        <button class="btn btn-secondary" @click="printReport">Печать отчета</button>
       </div>
     </div>
     <div v-else class="loading-container">
@@ -206,68 +216,800 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import DefaultLayout from '@/components/layout/DefaultLayout.vue';
+import LineChart from '@/components/dashboard/LineChart.vue';
+import DoughnutChart from '@/components/dashboard/DoughnutChart.vue';
+import BarChart from '@/components/dashboard/BarChart.vue';
+import DateRangePicker from '@/components/reports/DateRangePicker.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const isContentVisible = ref(false);
+const isDataLoaded = ref(false);
+const databaseData = ref(null);
 
 const activeTab = ref('inventory');
 const startDate = ref('');
 const endDate = ref('');
 const category = ref('');
 
+// Данные для графиков
+const inventoryChartData = ref({
+  labels: [],
+  datasets: [
+    {
+      data: [],
+      backgroundColor: [
+        '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#6366f1'
+      ]
+    }
+  ]
+});
+
+const movementChartData = ref({
+  labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+  datasets: [
+    {
+      label: 'Поступления',
+      data: [],
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16, 185, 129, 0.1)'
+    },
+    {
+      label: 'Отгрузки',
+      data: [],
+      borderColor: '#ef4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)'
+    }
+  ]
+});
+
+const turnoverChartData = ref({
+  labels: [],
+  datasets: [
+    {
+      label: 'Коэффициент оборачиваемости',
+      data: [],
+      backgroundColor: '#3b82f6'
+    }
+  ]
+});
+
+const financialChartData = ref({
+  labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+  datasets: [
+    {
+      label: 'Продажи',
+      data: [],
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)'
+    },
+    {
+      label: 'Прибыль',
+      data: [],
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16, 185, 129, 0.1)'
+    }
+  ]
+});
+
+// Настройки для графиков
+const defaultChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false
+};
+
 // Демо-данные для отчетов
-const inventoryData = ref([
-  { name: 'Клавиатура KL-5000', category: 'Электроника', quantity: 15, total: 18000, percentage: 25 },
-  { name: 'Монитор MP-2700', category: 'Электроника', quantity: 8, total: 120000, percentage: 35 },
-  { name: 'Стол офисный', category: 'Мебель', quantity: 3, total: 24000, percentage: 15 },
-  { name: 'Кресло офисное', category: 'Мебель', quantity: 5, total: 30000, percentage: 20 },
-  { name: 'Бумага A4', category: 'Канцтовары', quantity: 50, total: 15000, percentage: 5 }
-]);
-
-const movementData = ref([
-  { name: 'Клавиатура KL-5000', initialQuantity: 10, incoming: 15, outgoing: 10, finalQuantity: 15 },
-  { name: 'Монитор MP-2700', initialQuantity: 5, incoming: 10, outgoing: 7, finalQuantity: 8 },
-  { name: 'Стол офисный', initialQuantity: 2, incoming: 5, outgoing: 4, finalQuantity: 3 },
-  { name: 'Кресло офисное', initialQuantity: 3, incoming: 7, outgoing: 5, finalQuantity: 5 },
-  { name: 'Бумага A4', initialQuantity: 30, incoming: 50, outgoing: 30, finalQuantity: 50 }
-]);
-
-const turnoverData = ref([
-  { name: 'Клавиатура KL-5000', averageStock: 12, salesVolume: 120000, turnoverRate: 10, turnoverDays: 36 },
-  { name: 'Монитор MP-2700', averageStock: 6, salesVolume: 450000, turnoverRate: 5, turnoverDays: 72 },
-  { name: 'Стол офисный', averageStock: 2, salesVolume: 80000, turnoverRate: 2.5, turnoverDays: 144 },
-  { name: 'Кресло офисное', averageStock: 4, salesVolume: 120000, turnoverRate: 4, turnoverDays: 90 },
-  { name: 'Бумага A4', averageStock: 40, salesVolume: 60000, turnoverRate: 15, turnoverDays: 24 }
-]);
+const inventoryData = ref([]);
+const movementData = ref([]);
+const turnoverData = ref([]);
 
 // Вычисляемые значения
-const totalInventoryCost = ref(207000);
-const totalTurnover = ref(830000);
-const totalProfit = ref(270000);
+const totalInventoryCost = ref(0);
+const totalTurnover = ref(0);
+const totalProfit = ref(0);
 
-// Метод генерации отчета (в реальном проекте будет запрос к API)
-const generateReport = () => {
-  console.log('Generating report with params:', {
-    tab: activeTab.value,
-    startDate: startDate.value,
-    endDate: endDate.value,
-    category: category.value
+// Добавляем вспомогательную функцию для проверки попадания даты в указанный диапазон
+const isDateInRange = (dateString, startDate, endDate) => {
+  if (!startDate || !endDate) return true;
+  
+  const date = new Date(dateString);
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  return date >= start && date <= end;
+};
+
+// Функция для получения ID категории по её имени
+const getCategoryIdByName = (categoryName) => {
+  if (!categoryName || categoryName === 'Все категории') return null;
+  
+  const category = databaseData.value.categories.find(c => c.name === categoryName);
+  return category ? category.id : null;
+};
+
+// Загрузка данных из database.json
+const loadData = async () => {
+  try {
+    const response = await fetch('/data/database.json');
+    databaseData.value = await response.json();
+    
+    if (databaseData.value) {
+      prepareChartData();
+      isDataLoaded.value = true;
+    }
+  } catch (error) {
+    console.error('Error loading database:', error);
+  }
+};
+
+// Подготовка данных для графиков
+const prepareChartData = () => {
+  if (!databaseData.value) return;
+  
+  // Данные для инвентаризации
+  const categoryData = databaseData.value.statistics.inventory_value.by_category;
+  inventoryChartData.value.labels = categoryData.map(item => item.category);
+  inventoryChartData.value.datasets[0].data = categoryData.map(item => item.value);
+  
+  // Создание данных по инвентаризации для таблицы
+  totalInventoryCost.value = databaseData.value.statistics.inventory_value.total_value;
+  
+  // Создаем данные для таблицы остатков
+  inventoryData.value = databaseData.value.products.map(product => {
+    const category = databaseData.value.categories.find(c => c.id === product.category_id);
+    return {
+      name: product.name,
+      category: category ? category.name : 'Без категории',
+      quantity: product.quantity,
+      total: product.price * product.quantity,
+      percentage: ((product.price * product.quantity) / totalInventoryCost.value * 100).toFixed(2)
+    };
   });
   
-  // Здесь был бы запрос к API для получения данных
-  // Для демо просто обновим случайно некоторые значения
+  // Данные для движения товаров из JSON
+  const stockMovement = databaseData.value.statistics.monthly_stock_movement;
+  movementChartData.value.datasets[0].data = stockMovement.incoming;
+  movementChartData.value.datasets[1].data = stockMovement.outgoing;
+  
+  // Данные по движению для таблицы из JSON
+  movementData.value = databaseData.value.statistics.product_movement.map(product => {
+    return {
+      name: product.name,
+      initialQuantity: product.initial_quantity,
+      incoming: product.incoming,
+      outgoing: product.outgoing,
+      finalQuantity: product.final_quantity
+    };
+  });
+  
+  // Данные для оборачиваемости из JSON
+  const turnoverMetrics = databaseData.value.statistics.turnover_metrics;
+  turnoverChartData.value.labels = turnoverMetrics.map(item => item.name);
+  turnoverChartData.value.datasets[0].data = turnoverMetrics.map(item => item.turnover_rate);
+  
+  // Данные по оборачиваемости для таблицы из JSON
+  turnoverData.value = turnoverMetrics.map(product => ({
+    name: product.name,
+    averageStock: product.average_stock,
+    salesVolume: product.sales_volume,
+    turnoverRate: product.turnover_rate,
+    turnoverDays: product.turnover_days
+  }));
+  
+  // Финансовые данные
+  financialChartData.value.datasets[0].data = databaseData.value.statistics.monthly_sales.map(item => item.value);
+  financialChartData.value.datasets[1].data = databaseData.value.statistics.monthly_sales.map(item => item.value * 0.3); // Прибыль как 30% от продаж
+  
+  // Вычисляем общие финансовые показатели
+  totalTurnover.value = financialChartData.value.datasets[0].data.reduce((sum, value) => sum + value, 0);
+  totalProfit.value = financialChartData.value.datasets[1].data.reduce((sum, value) => sum + value, 0);
+};
+
+// Метод генерации отчета
+const generateReport = () => {
+  
+  isDataLoaded.value = false;
+  
+  // Имитация загрузки данных с задержкой
+  setTimeout(() => {
+    // Фильтруем данные в зависимости от выбранной категории и периода
+    const categoryId = getCategoryIdByName(category.value);
+    
+    if (activeTab.value === 'inventory') {
+      if (categoryId) {
+        // Фильтруем данные инвентаризации по категории
+        inventoryData.value = databaseData.value.products
+          .filter(product => product.category_id === categoryId)
+          .map(product => {
+            const category = databaseData.value.categories.find(c => c.id === product.category_id);
+            const total = product.price * product.quantity;
+            return {
+              name: product.name,
+              category: category ? category.name : 'Без категории',
+              quantity: product.quantity,
+              total: total,
+              percentage: ((total / totalInventoryCost.value) * 100).toFixed(2)
+            };
+          });
+          
+        // Обновляем также данные для графика
+        const filteredCategoryData = databaseData.value.statistics.inventory_value.by_category
+          .filter((_, index) => index === categoryId - 1);
+          
+        if (filteredCategoryData.length > 0) {
+          inventoryChartData.value.labels = filteredCategoryData.map(item => item.category);
+          inventoryChartData.value.datasets[0].data = filteredCategoryData.map(item => item.value);
+        }
+      } else {
+        // Используем все данные
+        prepareChartData();
+      }
+    } else if (activeTab.value === 'movement') {
+      // Фильтрация данных по датам для движения товаров
+      const startDateObj = startDate.value ? new Date(startDate.value) : null;
+      const endDateObj = endDate.value ? new Date(endDate.value) : null;
+      
+      // Фильтруем данные по категории и по дате, если указана
+      let filteredMovementData = [...databaseData.value.statistics.product_movement];
+      
+      if (categoryId) {
+        // Фильтруем данные движения товаров по категории
+        const filteredProducts = databaseData.value.products
+          .filter(product => product.category_id === categoryId);
+        
+        const productIds = filteredProducts.map(p => p.id);
+        
+        filteredMovementData = filteredMovementData.filter(product => 
+          productIds.includes(product.product_id)
+        );
+      }
+      
+      // Здесь в реальном приложении мы бы фильтровали по датам
+      // Для демонстрации просто используем все данные
+      movementData.value = filteredMovementData.map(product => ({
+        name: product.name,
+        initialQuantity: product.initial_quantity,
+        incoming: product.incoming,
+        outgoing: product.outgoing,
+        finalQuantity: product.final_quantity
+      }));
+          
+      // Обновляем данные графика по месяцам с учетом диапазона дат
+      const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+      let filteredMonths = months;
+      let filteredIncoming = [...databaseData.value.statistics.monthly_stock_movement.incoming];
+      let filteredOutgoing = [...databaseData.value.statistics.monthly_stock_movement.outgoing];
+      
+      // Если указан диапазон дат, фильтруем данные в соответствии с выбранным периодом
+      if (startDateObj && endDateObj) {
+        // Получаем разницу в днях между датами
+        const diffTime = Math.abs(endDateObj - startDateObj);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // В зависимости от разницы в датах, подготавливаем соответствующие данные
+        if (diffDays <= 1) {
+          // Если выбран один день, показываем данные только за этот месяц
+          const selectedMonth = startDateObj.getMonth();
+          filteredMonths = [months[selectedMonth]];
+          filteredIncoming = [filteredIncoming[selectedMonth]];
+          filteredOutgoing = [filteredOutgoing[selectedMonth]];
+        } 
+        else if (diffDays <= 7) {
+          // Для недельного периода
+          const startMonth = startDateObj.getMonth();
+          const endMonth = endDateObj.getMonth();
+          
+          if (startMonth === endMonth) {
+            // Если неделя в пределах одного месяца
+            filteredMonths = [months[startMonth]];
+            filteredIncoming = [filteredIncoming[startMonth]];
+            filteredOutgoing = [filteredOutgoing[startMonth]];
+          } else {
+            // Если неделя охватывает два месяца
+            filteredMonths = months.slice(startMonth, endMonth + 1);
+            
+            // Создаем пропорциональные данные для этих месяцев
+            const daysInFirstMonth = new Date(
+              startDateObj.getFullYear(), 
+              startMonth + 1, 
+              0
+            ).getDate() - startDateObj.getDate() + 1;
+            
+            const daysInSecondMonth = endDateObj.getDate();
+            const totalDays = daysInFirstMonth + daysInSecondMonth;
+            
+            const firstMonthIncoming = filteredIncoming[startMonth] * (daysInFirstMonth / totalDays);
+            const secondMonthIncoming = filteredIncoming[endMonth] * (daysInSecondMonth / totalDays);
+            
+            const firstMonthOutgoing = filteredOutgoing[startMonth] * (daysInFirstMonth / totalDays);
+            const secondMonthOutgoing = filteredOutgoing[endMonth] * (daysInSecondMonth / totalDays);
+            
+            filteredIncoming = [firstMonthIncoming, secondMonthIncoming];
+            filteredOutgoing = [firstMonthOutgoing, secondMonthOutgoing];
+          }
+        }
+        else if (diffDays <= 31) {
+          // Для периода до 31 дня (примерно месяц)
+          const startMonth = startDateObj.getMonth();
+          const endMonth = endDateObj.getMonth();
+          
+          if (startMonth === endMonth) {
+            // Если один и тот же месяц
+            filteredMonths = [months[startMonth]];
+            filteredIncoming = [filteredIncoming[startMonth]];
+            filteredOutgoing = [filteredOutgoing[startMonth]];
+          } else {
+            // Если разные месяцы
+            filteredMonths = months.slice(startMonth, endMonth + 1);
+            filteredIncoming = filteredIncoming.slice(startMonth, endMonth + 1);
+            filteredOutgoing = filteredOutgoing.slice(startMonth, endMonth + 1);
+          }
+        }
+        else if (diffDays <= 100) {
+          // Для квартала (примерно 3 месяца)
+          const startMonth = startDateObj.getMonth();
+          const endMonth = endDateObj.getMonth();
+          
+          if (startMonth <= endMonth) {
+            filteredMonths = months.slice(startMonth, endMonth + 1);
+            filteredIncoming = filteredIncoming.slice(startMonth, endMonth + 1);
+            filteredOutgoing = filteredOutgoing.slice(startMonth, endMonth + 1);
+          } else {
+            // Если период переходит через конец года
+            const monthsFirstPart = months.slice(startMonth);
+            const incomingFirstPart = filteredIncoming.slice(startMonth);
+            const outgoingFirstPart = filteredOutgoing.slice(startMonth);
+            
+            const monthsSecondPart = months.slice(0, endMonth + 1);
+            const incomingSecondPart = filteredIncoming.slice(0, endMonth + 1);
+            const outgoingSecondPart = filteredOutgoing.slice(0, endMonth + 1);
+            
+            filteredMonths = [...monthsFirstPart, ...monthsSecondPart];
+            filteredIncoming = [...incomingFirstPart, ...incomingSecondPart];
+            filteredOutgoing = [...outgoingFirstPart, ...outgoingSecondPart];
+          }
+        }
+        // Для годовых и более длительных периодов показываем все месяцы
+        // Данные уже инициализированы полным набором
+      }
+      
+      movementChartData.value = {
+        labels: filteredMonths,
+        datasets: [
+          {
+            label: 'Поступления',
+            data: filteredIncoming,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)'
+          },
+          {
+            label: 'Отгрузки',
+            data: filteredOutgoing,
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)'
+          }
+        ]
+      };
+    } else if (activeTab.value === 'turnover') {
+      // Базовая фильтрация по категории (если выбрана)
+      let turnoverMetrics = [...databaseData.value.statistics.turnover_metrics];
+      
+      if (categoryId) {
+        // Фильтруем данные оборачиваемости по категории
+        const filteredProducts = databaseData.value.products
+          .filter(product => product.category_id === categoryId);
+        
+        const productIds = filteredProducts.map(p => p.id);
+        turnoverMetrics = turnoverMetrics.filter(product => 
+          productIds.includes(product.product_id)
+        );
+      }
+      
+      // Если указан диапазон дат, применяем фильтрацию по периоду
+      if (startDate.value && endDate.value) {
+        const startDateObj = new Date(startDate.value);
+        const endDateObj = new Date(endDate.value);
+        
+        // Получаем разницу в днях между датами
+        const diffTime = Math.abs(endDateObj - startDateObj);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // Корректируем коэффициенты оборачиваемости в зависимости от периода
+        if (diffDays <= 31) {
+          // Для периодов до месяца корректируем пропорционально
+          const scaleFactor = diffDays / 30; // Масштабирующий фактор (относительно месяца)
+          
+          turnoverMetrics = turnoverMetrics.map(product => {
+            // Пропорционально уменьшаем коэффициент оборачиваемости и увеличиваем дни
+            const adjustedRate = product.turnover_rate * scaleFactor;
+            // Для дней используем обратную пропорцию
+            const adjustedDays = product.turnover_days / scaleFactor;
+            
+            return {
+              ...product,
+              turnover_rate: adjustedRate,
+              turnover_days: Math.round(adjustedDays)
+            };
+          });
+        } else if (diffDays <= 90) {
+          // Для квартала (примерно 90 дней) корректируем пропорционально
+          const scaleFactor = diffDays / 30; // Масштабирующий фактор
+          
+          turnoverMetrics = turnoverMetrics.map(product => {
+            return {
+              ...product,
+              turnover_rate: product.turnover_rate * scaleFactor,
+              turnover_days: Math.round(product.turnover_days / scaleFactor)
+            };
+          });
+        } else if (diffDays <= 365) {
+          // Для годового периода корректируем пропорционально
+          const scaleFactor = diffDays / 30; // Масштабирующий фактор
+          
+          turnoverMetrics = turnoverMetrics.map(product => {
+            return {
+              ...product,
+              turnover_rate: product.turnover_rate * scaleFactor,
+              turnover_days: Math.round(product.turnover_days / scaleFactor)
+            };
+          });
+        }
+        // Для более длительных периодов можно добавить дополнительную логику
+      }
+      
+      // Обновляем данные для графика
+      turnoverChartData.value.labels = turnoverMetrics.map(item => item.name);
+      turnoverChartData.value.datasets[0].data = turnoverMetrics.map(item => item.turnover_rate);
+      
+      // Обновляем данные для таблицы
+      turnoverData.value = turnoverMetrics.map(product => ({
+        name: product.name,
+        averageStock: product.average_stock,
+        salesVolume: product.sales_volume,
+        turnoverRate: product.turnover_rate,
+        turnoverDays: product.turnover_days
+      }));
+    } else if (activeTab.value === 'financial') {
+      // Финансовые данные фильтруем по дате (период)
+      const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+      const salesData = [...databaseData.value.statistics.monthly_sales];
+      let filteredSalesData = salesData.map(item => item.value);
+      let filteredMonths = months;
+      
+      // Если указан диапазон дат, фильтруем данные в соответствии с выбранным периодом
+      if (startDate.value && endDate.value) {
+        const startDateObj = new Date(startDate.value);
+        const endDateObj = new Date(endDate.value);
+        
+        // Получаем разницу в днях между датами
+        const diffTime = Math.abs(endDateObj - startDateObj);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // В зависимости от разницы в датах, подготавливаем соответствующие данные
+        if (diffDays <= 1) {
+          // Если выбран один день, показываем данные только за этот месяц
+          const selectedMonth = startDateObj.getMonth();
+          filteredMonths = [months[selectedMonth]];
+          filteredSalesData = [filteredSalesData[selectedMonth]];
+        } 
+        else if (diffDays <= 7) {
+          // Для недельного периода
+          const startMonth = startDateObj.getMonth();
+          const endMonth = endDateObj.getMonth();
+          
+          if (startMonth === endMonth) {
+            // Если неделя в пределах одного месяца
+            filteredMonths = [months[startMonth]];
+            filteredSalesData = [filteredSalesData[startMonth]];
+          } else {
+            // Если неделя охватывает два месяца
+            // Пропорционально делим данные между месяцами
+            // В первом приближении, делим поровну
+            filteredMonths = months.slice(startMonth, endMonth + 1);
+            
+            // Создаем пропорциональные данные для этих месяцев
+            const daysInFirstMonth = new Date(
+              startDateObj.getFullYear(), 
+              startMonth + 1, 
+              0
+            ).getDate() - startDateObj.getDate() + 1;
+            
+            const daysInSecondMonth = endDateObj.getDate();
+            const totalDays = daysInFirstMonth + daysInSecondMonth;
+            
+            const firstMonthData = filteredSalesData[startMonth] * (daysInFirstMonth / totalDays);
+            const secondMonthData = filteredSalesData[endMonth] * (daysInSecondMonth / totalDays);
+            
+            filteredSalesData = [firstMonthData, secondMonthData];
+          }
+        }
+        else if (diffDays <= 31) {
+          // Для периода до 31 дня (примерно месяц)
+          // Учитываем месяцы в выбранном диапазоне
+          const startMonth = startDateObj.getMonth();
+          const endMonth = endDateObj.getMonth();
+          
+          if (startMonth === endMonth) {
+            // Если один и тот же месяц
+            filteredMonths = [months[startMonth]];
+            filteredSalesData = [filteredSalesData[startMonth]];
+          } else {
+            // Если разные месяцы
+            filteredMonths = months.slice(startMonth, endMonth + 1);
+            filteredSalesData = filteredSalesData.slice(startMonth, endMonth + 1);
+          }
+        }
+        else if (diffDays <= 100) {
+          // Для квартала (примерно 3 месяца)
+          const startMonth = startDateObj.getMonth();
+          const endMonth = endDateObj.getMonth();
+          
+          if (startMonth <= endMonth) {
+            filteredMonths = months.slice(startMonth, endMonth + 1);
+            filteredSalesData = filteredSalesData.slice(startMonth, endMonth + 1);
+          } else {
+            // Если период переходит через конец года
+            const monthsFirstPart = months.slice(startMonth);
+            const salesFirstPart = filteredSalesData.slice(startMonth);
+            const monthsSecondPart = months.slice(0, endMonth + 1);
+            const salesSecondPart = filteredSalesData.slice(0, endMonth + 1);
+            
+            filteredMonths = [...monthsFirstPart, ...monthsSecondPart];
+            filteredSalesData = [...salesFirstPart, ...salesSecondPart];
+          }
+        }
+        else {
+          // Для годовых и более длительных периодов показываем все месяцы
+          // Данные уже инициализированы полным набором
+        }
+      }
+      
+      financialChartData.value = {
+        labels: filteredMonths,
+        datasets: [
+          {
+            label: 'Выручка',
+            data: filteredSalesData,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)'
+          },
+          {
+            label: 'Прибыль',
+            data: filteredSalesData.map(value => value * 0.3), // Прибыль как 30% от продаж
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)'
+          }
+        ]
+      };
+      
+      // Вычисляем общие финансовые показатели по отфильтрованным данным
+      totalTurnover.value = filteredSalesData.reduce((sum, value) => sum + value, 0);
+      totalProfit.value = totalTurnover.value * 0.3;
+      
+      // Обновляем финансовую сводку
+      totalInventoryCost.value = databaseData.value.statistics.inventory_value.total_value;
+    }
+    
+    isDataLoaded.value = true;
+  }, 800); // Увеличиваем задержку для более заметной индикации загрузки
+};
+
+// Функция для экспорта данных в Excel
+const exportToExcel = () => {
+  if (!isDataLoaded.value) return;
+  
+  // Получаем данные в зависимости от активной вкладки
+  let data = [];
+  let headers = [];
+  let filename = 'отчет';
   
   if (activeTab.value === 'inventory') {
-    inventoryData.value = inventoryData.value.map(item => ({
-      ...item,
-      quantity: Math.floor(item.quantity * (0.9 + Math.random() * 0.2)),
-      total: Math.floor(item.total * (0.9 + Math.random() * 0.2))
-    }));
+    headers = ['Наименование', 'Категория', 'Количество', 'Сумма', '% от общей стоимости'];
+    data = inventoryData.value.map(item => [
+      item.name,
+      item.category,
+      item.quantity,
+      item.total,
+      item.percentage + '%'
+    ]);
+    data.push(['Итого', '', '', totalInventoryCost.value, '100%']);
+    filename = 'остатки-на-складе';
+  } else if (activeTab.value === 'movement') {
+    headers = ['Наименование', 'Начальный остаток', 'Приход', 'Расход', 'Конечный остаток'];
+    data = movementData.value.map(item => [
+      item.name,
+      item.initialQuantity,
+      item.incoming,
+      item.outgoing,
+      item.finalQuantity
+    ]);
+    filename = 'движение-товаров';
+  } else if (activeTab.value === 'turnover') {
+    headers = ['Наименование', 'Средний остаток', 'Объем продаж', 'Коэффициент оборачиваемости', 'Время оборота (дни)'];
+    data = turnoverData.value.map(item => [
+      item.name,
+      item.averageStock,
+      item.salesVolume,
+      item.turnoverRate.toFixed(2),
+      item.turnoverDays
+    ]);
+    filename = 'оборачиваемость';
+  } else if (activeTab.value === 'financial') {
+    // Для финансовой вкладки формируем специальную сводку
+    headers = ['Показатель', 'Значение'];
+    data = [
+      ['Общая стоимость запасов', totalInventoryCost.value + ' ₽'],
+      ['Оборот за период', totalTurnover.value + ' ₽'],
+      ['Прибыль за период', totalProfit.value + ' ₽']
+    ];
+    filename = 'финансовые-показатели';
+  }
+  
+  // Добавляем период в имя файла
+  if (startDate.value && endDate.value) {
+    filename += `_${startDate.value}_${endDate.value}`;
+  }
+  
+  // Создаем CSV строку
+  let csvContent = "data:text/csv;charset=utf-8,";
+  
+  // Добавляем заголовок с информацией о периоде
+  csvContent += `Отчет: ${getReportTitle()}\r\n`;
+  if (startDate.value && endDate.value) {
+    csvContent += `Период: ${formatDateForDisplay(startDate.value)} - ${formatDateForDisplay(endDate.value)}\r\n\r\n`;
+  }
+  
+  // Добавляем заголовки
+  csvContent += headers.join(";") + "\r\n";
+  
+  // Добавляем данные
+  data.forEach(row => {
+    const formattedRow = row.map(cell => {
+      // Форматируем числовые значения
+      if (typeof cell === 'number') {
+        return cell.toLocaleString().replace('.', ',');
+      }
+      return cell;
+    });
+    csvContent += formattedRow.join(";") + "\r\n";
+  });
+  
+  // Создаем ссылку для скачивания и имитируем клик
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", filename + ".csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+// Функция для печати отчета
+const printReport = () => {
+  if (!isDataLoaded.value) return;
+  
+  // Сохраняем текущий title
+  const originalTitle = document.title;
+  
+  // Устанавливаем новый title для печати
+  document.title = getReportTitle();
+  
+  // Создаем стили для печати
+  const style = document.createElement('style');
+  style.type = 'text/css';
+  style.innerHTML = `
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      
+      .report-content, .report-content * {
+        visibility: visible;
+      }
+      
+      .report-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      
+      .chart-container {
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+      }
+      
+      .report-table-container {
+        page-break-inside: avoid;
+      }
+      
+      .financial-summary {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      
+      h1 {
+        text-align: center;
+        margin: 20px 0;
+        font-size: 24px;
+      }
+      
+      h2 {
+        margin: 15px 0;
+        font-size: 18px;
+      }
+      
+      .print-header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      
+      .print-date {
+        text-align: center;
+        margin-bottom: 30px;
+        font-style: italic;
+      }
+      
+      /* Убираем кнопки из печати */
+      .report-actions, button, .mobile-menu-toggle {
+        display: none !important;
+      }
+    }
+  `;
+  
+  document.head.appendChild(style);
+  
+  // Создаем заголовок и дату для печати
+  const header = document.createElement('div');
+  header.className = 'print-header';
+  header.innerHTML = `<h1>${getReportTitle()}</h1>`;
+  
+  const dateInfo = document.createElement('div');
+  dateInfo.className = 'print-date';
+  if (startDate.value && endDate.value) {
+    dateInfo.innerHTML = `Период: ${formatDateForDisplay(startDate.value)} - ${formatDateForDisplay(endDate.value)}`;
+  }
+  
+  // Находим контейнер для отчета и вставляем информацию только для печати
+  const reportContent = document.querySelector('.report-content');
+  reportContent.insertBefore(dateInfo, reportContent.firstChild);
+  reportContent.insertBefore(header, reportContent.firstChild);
+  
+  // Вызываем печать
+  window.print();
+  
+  // Восстанавливаем оригинальный заголовок и удаляем временные элементы
+  document.title = originalTitle;
+  reportContent.removeChild(header);
+  reportContent.removeChild(dateInfo);
+  document.head.removeChild(style);
+};
+
+// Вспомогательная функция для форматирования даты для отображения
+const formatDateForDisplay = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('ru-RU');
+};
+
+// Получение заголовка отчета в зависимости от активной вкладки
+const getReportTitle = () => {
+  switch (activeTab.value) {
+    case 'inventory':
+      return 'Отчет по остаткам на складе';
+    case 'movement':
+      return 'Отчет по движению товаров';
+    case 'turnover':
+      return 'Отчет по оборачиваемости товаров';
+    case 'financial':
+      return 'Финансовый отчет';
+    default:
+      return 'Отчет';
   }
 };
 
@@ -296,6 +1038,9 @@ onMounted(async () => {
     
     startDate.value = formatDate(firstDay);
     endDate.value = formatDate(lastDay);
+    
+    // Загружаем данные из database.json
+    await loadData();
   }
 });
 
@@ -311,12 +1056,26 @@ function formatDate(date) {
 <style lang="scss" scoped>
 .reports {
   padding: 1rem 0;
+  
+  @media (max-width: 768px) {
+    padding: 0.5rem 0;
+  }
 }
 
 .page-title {
   margin-bottom: 2rem;
   font-size: 2rem;
   color: var(--text-color);
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+  }
 }
 
 .report-tabs {
@@ -328,6 +1087,12 @@ function formatDate(date) {
   @media (max-width: 768px) {
     flex-wrap: nowrap;
     width: 100%;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
   }
 }
 
@@ -350,11 +1115,16 @@ function formatDate(date) {
     color: var(--primary-color);
     border-bottom-color: var(--primary-color);
   }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
 }
 
 .report-filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 1rem;
   margin-bottom: 2rem;
   padding: 1.5rem;
@@ -364,12 +1134,27 @@ function formatDate(date) {
   
   @media (max-width: 768px) {
     flex-direction: column;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    gap: 0.75rem;
   }
 }
 
 .filter-group {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   min-width: 200px;
+  
+  @media (max-width: 480px) {
+    min-width: 100%;
+  }
 }
 
 .date-range {
@@ -384,6 +1169,10 @@ function formatDate(date) {
   input {
     flex: 1;
   }
+  
+  @media (max-width: 480px) {
+    gap: 0.3rem;
+  }
 }
 
 .report-content {
@@ -392,6 +1181,16 @@ function formatDate(date) {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
   margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
 }
 
 .chart-container {
@@ -401,17 +1200,26 @@ function formatDate(date) {
     font-size: 1.25rem;
     margin-bottom: 1rem;
     color: var(--text-color);
+    text-align: center;
   }
-}
-
-.chart-placeholder {
-  height: 300px;
-  background-color: #f9fafb;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+    
+    h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+    
+    h2 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+  }
 }
 
 .report-table-container {
@@ -419,6 +1227,17 @@ function formatDate(date) {
     font-size: 1.25rem;
     margin-bottom: 1rem;
     color: var(--text-color);
+    text-align: center;
+    
+    @media (max-width: 768px) {
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    @media (max-width: 480px) {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
   }
 }
 
@@ -428,14 +1247,26 @@ function formatDate(date) {
   
   th, td {
     padding: 1rem;
-    text-align: left;
+    text-align: center;
     border-bottom: 1px solid #e5e7eb;
+    
+    @media (max-width: 768px) {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    @media (max-width: 480px) {
+      padding: 0.5rem 0.3rem;
+      font-size: 0.8rem;
+    }
   }
   
   th {
     background-color: #f9fafb;
     color: #4b5563;
     font-weight: 600;
+    position: sticky;
+    top: 0;
   }
   
   tbody tr:last-child td {
@@ -453,6 +1284,23 @@ function formatDate(date) {
       border-top: 2px solid #e5e7eb;
     }
   }
+  
+  @media (max-width: 640px) {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    
+    th:first-child, td:first-child {
+      position: sticky;
+      left: 0;
+      background-color: #f9fafb;
+      z-index: 1;
+    }
+    
+    tbody tr:hover td:first-child {
+      background-color: #f3f4f6;
+    }
+  }
 }
 
 .financial-summary {
@@ -460,6 +1308,11 @@ function formatDate(date) {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }
 
 .summary-card {
@@ -479,12 +1332,50 @@ function formatDate(date) {
     font-weight: 700;
     color: var(--primary-color);
   }
+  
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+    
+    h3 {
+      font-size: 0.9rem;
+    }
+    
+    .summary-value {
+      font-size: 1.5rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
+    
+    h3 {
+      font-size: 0.85rem;
+      margin-bottom: 0.3rem;
+    }
+    
+    .summary-value {
+      font-size: 1.25rem;
+    }
+  }
 }
 
 .report-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  
+  @media (max-width: 768px) {
+    justify-content: center;
+  }
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    
+    .btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
 }
 
 .loading-container {

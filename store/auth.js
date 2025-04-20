@@ -2,13 +2,15 @@ import { defineStore } from 'pinia';
 import { useCookie } from '#app';
 import { ADMIN_CREDENTIALS } from '@/constants/auth';
 import { useDatabaseStore } from '@/store/database';
+import { ref } from 'vue';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     token: null,
     isLoading: false,
-    error: null
+    error: null,
+    isClientSideInitialized: false
   }),
   
   getters: {
@@ -77,7 +79,9 @@ export const useAuthStore = defineStore('auth', {
     },
     
     checkAuth() {
-      // Проверяем авторизацию только на клиенте
+      // For SSR, we initially set auth state to null
+      // Client-side will update after mount
+      
       if (process.client) {
         const authCookie = useCookie('auth_token');
         
@@ -97,6 +101,15 @@ export const useAuthStore = defineStore('auth', {
             this.logout();
           }
         }
+        
+        // Mark as initialized on client-side
+        this.isClientSideInitialized = true;
+      }
+    },
+    
+    initializeClientSide() {
+      if (!this.isClientSideInitialized && process.client) {
+        this.checkAuth();
       }
     },
     

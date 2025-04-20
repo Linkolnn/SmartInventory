@@ -234,12 +234,25 @@ const animateContent = () => {
 <style lang="scss" scoped>
 .dashboard {
   padding: 1rem 0;
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem 0;
+  }
 }
 
 .page-title {
   margin-bottom: 2rem;
   font-size: 2rem;
   color: var(--text-color);
+  
+  @media (max-width: 480px) {
+    margin-bottom: 1.25rem;
+    font-size: 1.5rem;
+  }
+  
+  @media (max-width: 320px) {
+    font-size: 1.25rem;
+  }
 }
 
 .dashboard-stats {
@@ -247,6 +260,15 @@ const animateContent = () => {
   flex-wrap: wrap;
   gap: 1.5rem;
   margin-bottom: 2rem;
+  
+  @media (max-width: 480px) {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (max-width: 320px) {
+    gap: 0.75rem;
+  }
 }
 
 .stat-card {
@@ -263,6 +285,11 @@ const animateContent = () => {
   &:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  @media (max-width: 480px) {
+    min-width: 100%;
+    max-width: 100%;
   }
 }
 
@@ -284,6 +311,14 @@ const animateContent = () => {
   padding: 1.5rem;
   width: 100%;
   justify-content: flex-start;
+  
+  @media (max-width: 480px) {
+    padding: 1.25rem;
+  }
+  
+  @media (max-width: 320px) {
+    padding: 1rem;
+  }
 }
 
 .stat-icon {
@@ -304,6 +339,13 @@ const animateContent = () => {
     justify-content: center;
     line-height: 1;
   }
+  
+  @media (max-width: 320px) {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    margin-right: 0.75rem;
+  }
 }
 
 .stat-content {
@@ -316,6 +358,15 @@ const animateContent = () => {
     margin-bottom: 0.5rem;
     color: #6b7280;
     white-space: nowrap;
+    
+    @media (max-width: 480px) {
+      font-size: 0.8rem;
+    }
+    
+    @media (max-width: 320px) {
+      font-size: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
   }
   
   .stat-value {
@@ -324,6 +375,14 @@ const animateContent = () => {
     color: var(--text-color);
     margin: 0;
     line-height: 1.2;
+    
+    @media (max-width: 480px) {
+      font-size: 1.25rem;
+    }
+    
+    @media (max-width: 320px) {
+      font-size: 1.1rem;
+    }
   }
 }
 
@@ -335,6 +394,17 @@ const animateContent = () => {
   
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    grid-template-columns: minmax(250px, 1fr);
+  }
+  
+  @media (max-width: 320px) {
+    gap: 0.75rem;
+    margin-bottom: 1rem;
   }
 }
 
@@ -349,11 +419,37 @@ const animateContent = () => {
     margin-bottom: 1rem;
     color: var(--text-color);
   }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
+    
+    h2 {
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+    }
+  }
+  
+  @media (max-width: 320px) {
+    padding: 0.75rem;
+    
+    h2 {
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+  }
 }
 
 .chart-container {
   height: 300px;
   position: relative;
+  
+  @media (max-width: 480px) {
+    height: 250px;
+  }
+  
+  @media (max-width: 320px) {
+    height: 200px;
+  }
 }
 
 .chart-placeholder {
@@ -377,12 +473,38 @@ const animateContent = () => {
     margin-bottom: 1rem;
     color: var(--text-color);
   }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
+    
+    h2 {
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+    }
+  }
+  
+  @media (max-width: 320px) {
+    padding: 0.75rem;
+    
+    h2 {
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+  }
 }
 
 .activity-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  
+  @media (max-width: 480px) {
+    gap: 0.75rem;
+  }
+  
+  @media (max-width: 320px) {
+    gap: 0.5rem;
+  }
 }
 
 .activity-item {
@@ -395,6 +517,15 @@ const animateContent = () => {
   
   &:hover {
     transform: translateX(5px);
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+  }
+  
+  @media (max-width: 320px) {
+    padding: 0.5rem;
+    flex-wrap: wrap;
   }
 }
 
@@ -418,6 +549,13 @@ const animateContent = () => {
     background-color: rgba(239, 68, 68, 0.2);
     color: #ef4444;
   }
+  
+  @media (max-width: 320px) {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 1rem;
+    margin-right: 0.75rem;
+  }
 }
 
 .activity-details {
@@ -435,6 +573,41 @@ const animateContent = () => {
   .activity-time {
     font-size: 0.75rem;
     color: #9ca3af;
+  }
+  
+  @media (max-width: 480px) {
+    h4 {
+      font-size: 0.9rem;
+    }
+    
+    p {
+      font-size: 0.8rem;
+    }
+    
+    .activity-time {
+      font-size: 0.7rem;
+    }
+  }
+  
+  @media (max-width: 320px) {
+    width: calc(100% - 2.25rem);
+    
+    h4 {
+      font-size: 0.8rem;
+      margin-bottom: 0.15rem;
+    }
+    
+    p {
+      font-size: 0.75rem;
+      margin-bottom: 0.15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .activity-time {
+      font-size: 0.65rem;
+    }
   }
 }
 
