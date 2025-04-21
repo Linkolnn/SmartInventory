@@ -1303,19 +1303,47 @@ onMounted(async () => {
 
 .date-range {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
   
-  span {
-    color: #6b7280;
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
   }
   
-  input {
-    flex: 1;
+  .date-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    
+    @media (max-width: 480px) {
+      flex-direction: column;
+      align-items: flex-start;
+      width: 100%;
+      
+      .dropdown {
+        width: 100%;
+        
+        button {
+          width: 100%;
+          justify-content: space-between;
+        }
+        
+        .dropdown-menu {
+          width: 100%;
+          min-width: unset;
+        }
+      }
+    }
   }
   
-  @media (max-width: 480px) {
-    gap: 0.3rem;
+  .generate-btn {
+    @media (max-width: 480px) {
+      width: 100%;
+    }
   }
 }
 
@@ -1403,6 +1431,11 @@ onMounted(async () => {
       padding: 0.5rem 0.3rem;
       font-size: 0.8rem;
     }
+    
+    @media (max-width: 360px) {
+      padding: 0.4rem 0.2rem;
+      font-size: 0.7rem;
+    }
   }
   
   th {
@@ -1433,16 +1466,16 @@ onMounted(async () => {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
     
-    th:first-child, td:first-child {
-      position: sticky;
-      left: 0;
-      background-color: #f9fafb;
-      z-index: 1;
+    th:not(:first-child), td:not(:first-child) {
+      min-width: 80px;
     }
-    
-    tbody tr:hover td:first-child {
-      background-color: #f3f4f6;
+  }
+  
+  @media (max-width: 360px) {
+    th:not(:first-child), td:not(:first-child) {
+      min-width: 70px;
     }
   }
 }
@@ -1505,19 +1538,25 @@ onMounted(async () => {
 
 .report-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 1rem;
-  
-  @media (max-width: 768px) {
-    justify-content: center;
-  }
+  margin-top: 1.5rem;
   
   @media (max-width: 480px) {
     flex-direction: column;
+    width: 100%;
     
     .btn {
       width: 100%;
-      text-align: center;
+    }
+  }
+  
+  @media (max-width: 768px) and (min-width: 481px) {
+    flex-wrap: wrap;
+    
+    .btn {
+      flex: 1;
+      min-width: 150px;
     }
   }
 }

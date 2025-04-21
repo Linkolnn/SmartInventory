@@ -580,18 +580,17 @@ const prepareData = async () => {
 }
 
 .dashboard-stats {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
   
-  @media (max-width: 480px) {
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
   }
   
-  @media (max-width: 320px) {
-    gap: 0.75rem;
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -611,9 +610,8 @@ const prepareData = async () => {
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
   }
   
-  @media (max-width: 480px) {
-    min-width: 100%;
-    max-width: 100%;
+  @media (max-width: 576px) {
+    padding: 1rem;
   }
 }
 
@@ -691,6 +689,10 @@ const prepareData = async () => {
       font-size: 0.75rem;
       margin-bottom: 0.25rem;
     }
+    
+    @media (max-width: 576px) {
+      font-size: 1.1rem;
+    }
   }
   
   .stat-value {
@@ -706,6 +708,10 @@ const prepareData = async () => {
     
     @media (max-width: 320px) {
       font-size: 1.1rem;
+    }
+    
+    @media (max-width: 576px) {
+      font-size: 1.5rem;
     }
   }
 }
@@ -786,6 +792,10 @@ const prepareData = async () => {
       font-size: 0.875rem;
       margin-bottom: 0.5rem;
     }
+  }
+  
+  @media (max-width: 576px) {
+    padding: 0.75rem;
   }
 }
 
