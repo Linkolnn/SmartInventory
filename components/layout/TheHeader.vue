@@ -28,7 +28,9 @@
               </div>
             </div>
             <div v-else class="mobile-login-container">
-              <NuxtLink to="/auth/login" class="mobile-login-btn" @click="closeMobileMenu">Войти</NuxtLink>
+              <NuxtLink to="/auth/login" class="mobile-login-btn" @click="closeMobileMenu">
+                <button class="mobile-login-btn">Войти</button>
+              </NuxtLink>
             </div>
           </ClientOnly>
         </div>
@@ -342,6 +344,7 @@ onUnmounted(() => {
 }
 
 .mobile-login-btn {
+  font-size: 16px;
   padding: 0.5rem 1.5rem;
   background-color: var(--primary-color);
   color: white !important;

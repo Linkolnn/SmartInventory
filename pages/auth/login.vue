@@ -49,6 +49,12 @@
           >
             {{ authStore.isLoading ? 'Вход...' : 'Войти' }}
           </button>
+          
+          <div class="text-center mt-3">
+            <a href="#" @click.prevent="resetLocalStorage" class="reset-link">
+              Проблемы со входом? Сбросить кэш
+            </a>
+          </div>
         </form>
       </div>
     </div>
@@ -96,6 +102,54 @@ const handleLogin = async () => {
       router.push('/dashboard');
     } else {
       router.push('/inventory');
+    }
+  }
+};
+
+const resetLocalStorage = async () => {
+  // Реализация сброса локального хранилища
+  if (process.client) {
+    try {
+      // Сначала загружаем пользователей из database.json
+      const response = await fetch('/data/database.json');
+      
+      if (response.ok) {
+        const data = await response.json();
+        const users = data.users || [];
+        
+        if (users.length > 0) {
+          // Удаляем все связанные с пользователями данные из localStorage
+          localStorage.removeItem('smartsklad_users');
+          localStorage.removeItem('current_user');
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('smartsklad_database');
+          
+          // Сохраняем пользователей из database.json
+          localStorage.setItem('smartsklad_users', JSON.stringify(users));
+          
+          // Показываем уведомление
+          alert('Кэш пользователей очищен и обновлен из database.json. Теперь вы можете войти с использованием стандартных учетных данных.');
+          
+          // Обновляем страницу для применения изменений
+          window.location.reload();
+        } else {
+          alert('Ошибка: пользователи не найдены в database.json');
+        }
+      } else {
+        alert('Ошибка при загрузке database.json: ' + response.status);
+      }
+    } catch (e) {
+      // Обрабатываем ошибку без вывода в консоль
+      alert('Произошла ошибка при сбросе кэша.');
+      
+      // Всё равно очищаем localStorage
+      localStorage.removeItem('smartsklad_users');
+      localStorage.removeItem('current_user');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('smartsklad_database');
+      
+      // Обновляем страницу для применения изменений
+      window.location.reload();
     }
   }
 };
@@ -170,6 +224,24 @@ const handleLogin = async () => {
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+  }
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.reset-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.875rem;
+  
+  &:hover {
+    text-decoration: underline;
   }
 }
 </style> 

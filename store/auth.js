@@ -28,24 +28,111 @@ export const useAuthStore = defineStore('auth', {
       this.error = null;
       
       try {
-        // Пробуем напрямую загрузить данные из database.json
-        const response = await fetch('/data/database.json');
+        let foundUser = null;
+        let source = '';
         
-        if (!response.ok) {
-          throw new Error(`Ошибка загрузки данных: ${response.status}`);
+        // 1. Сначала проверяем пользователей в localStorage (созданные администратором)
+        if (process.client) {
+          const savedUsers = localStorage.getItem('smartsklad_users');
+          if (savedUsers) {
+            try {
+              const usersArray = JSON.parse(savedUsers);
+              foundUser = usersArray.find(u => u.email === email);
+              if (foundUser) {
+                source = 'smartsklad_users';
+              }
+            } catch (e) {
+              // Обрабатываем ошибку без вывода в консоль
+            }
+          }
         }
         
-        const data = await response.json();
-        const users = data.users || [];
+        // 2. Если не нашли в smartsklad_users, проверяем в smartsklad_database
+        if (!foundUser && process.client) {
+          const savedDatabase = localStorage.getItem('smartsklad_database');
+          if (savedDatabase) {
+            try {
+              const database = JSON.parse(savedDatabase);
+              if (database.users && Array.isArray(database.users)) {
+                foundUser = database.users.find(u => u.email === email);
+                if (foundUser) {
+                  source = 'smartsklad_database';
+                }
+              }
+            } catch (e) {
+              // Обрабатываем ошибку без вывода в консоль
+            }
+          }
+        }
         
-        // Ищем пользователя по email
-        const foundUser = users.find(u => u.email === email);
+        // 3. Если и там не нашли, пробуем загрузить из database.json
+        if (!foundUser) {
+          try {
+            const response = await fetch('/data/database.json');
+            
+            if (!response.ok) {
+              throw new Error(`Ошибка загрузки данных: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const users = data.users || [];
+            
+            // Ищем пользователя по email
+            foundUser = users.find(u => u.email === email);
+            if (foundUser) {
+              source = 'database.json';
+              
+              // Сохраняем пользователей в localStorage для будущего использования
+              if (process.client && users.length > 0) {
+                localStorage.setItem('smartsklad_users', JSON.stringify(users));
+              }
+            }
+          } catch (e) {
+            throw new Error('Не удалось загрузить данные пользователей. Проверьте соединение.');
+          }
+        }
         
         if (!foundUser) {
           throw new Error('Пользователь с таким email не найден');
         }
         
         // Проверяем пароль
+        if (!foundUser.password) {
+          // Пытаемся найти пароль в database.json
+          try {
+            const response = await fetch('/data/database.json');
+            if (response.ok) {
+              const data = await response.json();
+              const users = data.users || [];
+              const userInJson = users.find(u => u.email === email);
+              
+              if (userInJson && userInJson.password) {
+                foundUser.password = userInJson.password;
+                
+                // Обновляем пользователя в localStorage
+                if (process.client && source === 'smartsklad_users') {
+                  const savedUsers = localStorage.getItem('smartsklad_users');
+                  if (savedUsers) {
+                    try {
+                      const parsedUsers = JSON.parse(savedUsers);
+                      const userIndex = parsedUsers.findIndex(u => u.email === email);
+                      
+                      if (userIndex !== -1) {
+                        parsedUsers[userIndex].password = userInJson.password;
+                        localStorage.setItem('smartsklad_users', JSON.stringify(parsedUsers));
+                      }
+                    } catch (e) {
+                      // Обрабатываем ошибку без вывода в консоль
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Обрабатываем ошибку без вывода в консоль
+          }
+        }
+        
         if (foundUser.password !== password) {
           throw new Error('Неверный пароль');
         }

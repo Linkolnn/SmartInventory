@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia';
-import { useCookie } from '#app';
 import { ADMIN_CREDENTIALS } from '@/constants/auth';
 
 export const useUsersStore = defineStore('users', {
@@ -16,48 +15,114 @@ export const useUsersStore = defineStore('users', {
       this.error = null;
       
       try {
-        // В реальном приложении здесь будет API запрос
-        // Для демо создаем несколько тестовых пользователей
+        // Изначальные пользователи по умолчанию
+        let defaultUsers = [
+          {
+            id: 1,
+            name: ADMIN_CREDENTIALS.name,
+            email: ADMIN_CREDENTIALS.email,
+            role: ADMIN_CREDENTIALS.role,
+            password: ADMIN_CREDENTIALS.password  // Пароль администратора из констант
+          },
+          {
+            id: 2,
+            name: 'Иванов Иван',
+            email: 'ivanov@example.com',
+            role: 'manager',
+            password: 'manager123'  // Пароль менеджера
+          },
+          {
+            id: 3,
+            name: 'Петров Петр',
+            email: 'petrov@example.com',
+            role: 'user',
+            password: 'user123'  // Пароль обычного пользователя
+          },
+          {
+            id: 4,
+            name: 'Сидорова Елена',
+            email: 'sidorova@example.com',
+            role: 'user',
+            password: 'user456'  // Пароль обычного пользователя
+          }
+        ];
+        
+        // Пробуем загрузить пользователей из database.json
+        try {
+          const response = await fetch('/data/database.json');
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.users && Array.isArray(data.users) && data.users.length > 0) {
+              defaultUsers = data.users;
+            }
+          }
+        } catch (e) {
+          // Обрабатываем ошибку без вывода в консоль
+        }
         
         // Проверяем, сохранены ли уже пользователи в localStorage
-        const savedUsers = localStorage.getItem('smartsklad_users');
-        if (savedUsers) {
-          this.users = JSON.parse(savedUsers);
-        } else {
-          // Создаем первоначальный список пользователей
-          const defaultUsers = [
-            {
-              id: 1,
-              name: ADMIN_CREDENTIALS.name,
-              email: ADMIN_CREDENTIALS.email,
-              role: ADMIN_CREDENTIALS.role,
-              password: ADMIN_CREDENTIALS.password  // Пароль администратора из констант
-            },
-            {
-              id: 2,
-              name: 'Иванов Иван',
-              email: 'ivanov@example.com',
-              role: 'manager',
-              password: 'manager123'  // Пароль менеджера
-            },
-            {
-              id: 3,
-              name: 'Петров Петр',
-              email: 'petrov@example.com',
-              role: 'user',
-              password: 'user123'  // Пароль обычного пользователя
-            },
-            {
-              id: 4,
-              name: 'Сидорова Елена',
-              email: 'sidorova@example.com',
-              role: 'user',
-              password: 'user456'  // Пароль обычного пользователя
-            }
-          ];
+        if (process.client) {
+          const savedUsers = localStorage.getItem('smartsklad_users');
           
+          if (savedUsers) {
+            try {
+              const parsedUsers = JSON.parse(savedUsers);
+              
+              if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+                // Проверяем, что у каждого пользователя есть пароль
+                let needsUpdate = false;
+                
+                // Сначала создаем мапу для быстрого поиска по email
+                const defaultUserMap = {};
+                defaultUsers.forEach(user => {
+                  defaultUserMap[user.email] = user.password;
+                });
+                
+                // Теперь обновляем пользователей в localStorage
+                parsedUsers.forEach(user => {
+                  if (!user.password && defaultUserMap[user.email]) {
+                    user.password = defaultUserMap[user.email];
+                    needsUpdate = true;
+                  }
+                });
+                
+                // Если были обновления, сохраняем
+                if (needsUpdate) {
+                  localStorage.setItem('smartsklad_users', JSON.stringify(parsedUsers));
+                }
+                
+                this.users = parsedUsers;
+                
+                // Проверяем наличие всех пользователей из database.json
+                let updated = false;
+                defaultUsers.forEach(defaultUser => {
+                  const userExists = this.users.some(user => user.email === defaultUser.email);
+                  if (!userExists) {
+                    this.users.push(defaultUser);
+                    updated = true;
+                  }
+                });
+                
+                // Сохраняем обновления, если были добавлены недостающие пользователи
+                if (updated) {
+                  this.saveUsersToLocalStorage();
+                }
+              } else {
+                this.users = defaultUsers;
+                this.saveUsersToLocalStorage();
+              }
+            } catch (e) {
+              this.users = defaultUsers;
+              this.saveUsersToLocalStorage();
+            }
+          } else {
+            this.users = defaultUsers;
+            this.saveUsersToLocalStorage();
+          }
+        } else {
+          // Для серверного рендеринга используем defaultUsers
           this.users = defaultUsers;
-          this.saveUsersToLocalStorage();
         }
         
         return true;

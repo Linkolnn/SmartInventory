@@ -108,7 +108,6 @@
                   <label for="language">Язык интерфейса</label>
                   <select id="language" v-model="settings.language" class="form-input">
                     <option value="ru">Русский</option>
-                    <option value="en">English</option>
                   </select>
                 </div>
                 
@@ -265,6 +264,11 @@ const handleLogout = () => {
   font-size: 2rem;
   margin-bottom: 2rem;
   color: var(--text-color);
+  
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
 }
 
 .profile-card {
@@ -272,12 +276,21 @@ const handleLogout = () => {
   border-radius: 0.5rem;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   padding: 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+  }
 }
 
 .profile-header {
   display: flex;
   align-items: center;
   margin-bottom: 2rem;
+  
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .profile-avatar {
@@ -289,6 +302,11 @@ const handleLogout = () => {
   align-items: center;
   justify-content: center;
   margin-right: 1.5rem;
+  
+  @media (max-width: 576px) {
+    margin-bottom: 1rem;
+    margin-right: 0;
+  }
   
   span {
     color: white;
@@ -302,6 +320,10 @@ const handleLogout = () => {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
     color: var(--text-color);
+    
+    @media (max-width: 768px) {
+      font-size: 1.25rem;
+    }
   }
   
   .profile-role {
@@ -321,6 +343,11 @@ const handleLogout = () => {
   border-bottom: 1px solid #e5e7eb;
   margin-bottom: 1.5rem;
   
+  @media (max-width: 576px) {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
   .tab-btn {
     padding: 0.75rem 1.5rem;
     background: none;
@@ -330,6 +357,12 @@ const handleLogout = () => {
     color: #6b7280;
     transition: all 0.3s ease;
     position: relative;
+    
+    @media (max-width: 576px) {
+      padding: 0.5rem 1rem;
+      width: 100%;
+      text-align: center;
+    }
     
     &:hover {
       color: var(--primary-color);
@@ -352,7 +385,10 @@ const handleLogout = () => {
 }
 
 .profile-content {
-  max-width: 600px;
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+  }
 }
 
 .profile-form {
@@ -404,9 +440,21 @@ const handleLogout = () => {
   display: flex;
   justify-content: flex-start;
   margin-top: 2rem;
+  
+  @media (max-width: 576px) {
+    flex-direction: column;
+    
+    .btn {
+      width: 100%;
+      margin-right: 0;
+      margin-bottom: 1rem;
+    }
+  }
 }
 
 .logout-section {
+  display: flex;
+  justify-content: center;
   margin-top: 3rem;
   padding-top: 2rem;
   border-top: 1px solid #e5e7eb;
