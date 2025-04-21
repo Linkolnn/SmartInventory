@@ -18,22 +18,30 @@
       <h2 class="section-title">Возможности СмартСклада</h2>
       <div class="features-grid">
         <div class="feature-card">
-          <div class="feature-icon">📦</div>
+          <div class="feature-icon">
+            <font-awesome-icon :icon="['fas', 'box']" size="2x" />
+          </div>
           <h3>Управление запасами</h3>
           <p>Отслеживайте остатки товаров в режиме реального времени и получайте уведомления о пополнении</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">📊</div>
+          <div class="feature-icon">
+            <font-awesome-icon :icon="['fas', 'chart-line']" size="2x" />
+          </div>
           <h3>Аналитика и отчеты</h3>
           <p>Создавайте подробные отчеты о движении товаров, оборачиваемости и эффективности работы склада</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">📝</div>
+          <div class="feature-icon">
+            <font-awesome-icon :icon="['fas', 'file-invoice']" size="2x" />
+          </div>
           <h3>Управление документами</h3>
           <p>Создавайте, редактируйте и управляйте всеми складскими документами в одном месте</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">👥</div>
+          <div class="feature-icon">
+            <font-awesome-icon :icon="['fas', 'users']" size="2x" />
+          </div>
           <h3>Многопользовательский доступ</h3>
           <p>Назначайте роли и разграничивайте доступ к функциям системы для различных сотрудников</p>
         </div>
@@ -107,8 +115,9 @@ onMounted(() => {
   gap: 2rem;
   
   @media (max-width: 768px) {
-    flex-direction: column;
+    flex-direction: column-reverse;
     text-align: center;
+    gap: 10px
   }
 }
 
@@ -223,6 +232,10 @@ onMounted(() => {
     color: white;
     font-size: 2rem;
     margin-bottom: 1rem;
+
+      @media (max-width: 768px) {
+        font-size: 1.5rem;
+    }
   }
   
   p {

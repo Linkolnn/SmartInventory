@@ -105,7 +105,6 @@ const formSubmitted = ref(false);
 
 const submitForm = () => {
   // В реальном приложении здесь будет отправка данных на сервер
-  console.log('Form submitted:', form.value);
   
   // Имитация успешной отправки
   setTimeout(() => {

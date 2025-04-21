@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
 import { useCookie } from '#app';
-import { ADMIN_CREDENTIALS } from '@/constants/auth';
 import { useDatabaseStore } from '@/store/database';
 import { ref } from 'vue';
 
@@ -14,7 +13,11 @@ export const useAuthStore = defineStore('auth', {
   }),
   
   getters: {
-    isAuthenticated: (state) => !!state.token && !!state.user,
+    isAuthenticated: (state) => {
+      // В режиме SSR не считаем пользователя аутентифицированным, пока не инициализируемся на клиенте
+      if (!process.client && !state.isClientSideInitialized) return false;
+      return !!state.token && !!state.user;
+    },
     isAdmin: (state) => state.user?.role === 'admin',
     isManager: (state) => state.user?.role === 'manager' || state.user?.role === 'admin'
   },
@@ -71,7 +74,6 @@ export const useAuthStore = defineStore('auth', {
         return true;
       } catch (err) {
         this.error = err.message || 'Ошибка при входе';
-        console.error('Ошибка авторизации:', err);
         return false;
       } finally {
         this.isLoading = false;
@@ -79,8 +81,8 @@ export const useAuthStore = defineStore('auth', {
     },
     
     checkAuth() {
-      // For SSR, we initially set auth state to null
-      // Client-side will update after mount
+      // Для SSR изначально устанавливаем состояние аутентификации в null
+      // Клиентская сторона обновит после монтирования
       
       if (process.client) {
         const authCookie = useCookie('auth_token');
@@ -102,8 +104,12 @@ export const useAuthStore = defineStore('auth', {
           }
         }
         
-        // Mark as initialized on client-side
+        // Отмечаем как инициализированный на клиентской стороне
         this.isClientSideInitialized = true;
+      } else {
+        // В режиме SSR не устанавливаем данные пользователя
+        this.user = null;
+        this.token = null;
       }
     },
     
@@ -124,6 +130,16 @@ export const useAuthStore = defineStore('auth', {
       // Удаляем из localStorage
       if (process.client) {
         localStorage.removeItem('current_user');
+      }
+    },
+    
+    setUser(userData) {
+      // Обновляем пользователя в store
+      this.user = userData;
+      
+      // Обновляем в localStorage на клиенте
+      if (process.client) {
+        localStorage.setItem('current_user', JSON.stringify(userData));
       }
     }
   }

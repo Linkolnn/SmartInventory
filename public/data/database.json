@@ -44,147 +44,125 @@
   "products": [
     {
       "id": 1,
-      "name": "Ноутбук HP ProBook",
-      "sku": "NB-HP-001",
+      "code": "IT001",
+      "name": "Монитор 24 дюйма",
       "category_id": 1,
-      "price": 45000,
-      "quantity": 25,
-      "reorder_level": 5,
-      "location": "A-1-1",
-      "description": "Ноутбук HP ProBook, Intel Core i5, 8GB RAM, 256GB SSD",
-      "image": "/images/products/laptop-hp.jpg",
-      "created_at": "2023-01-10T09:00:00Z",
-      "updated_at": "2023-04-15T14:30:00Z"
+      "quantity": 15,
+      "unit": "шт",
+      "price": 12500,
+      "minQuantity": 5
     },
     {
       "id": 2,
-      "name": "Монитор Dell 27\"",
-      "sku": "MON-DEL-001",
+      "code": "IT002",
+      "name": "Клавиатура механическая",
       "category_id": 1,
-      "price": 18000,
-      "quantity": 40,
-      "reorder_level": 10,
-      "location": "A-1-2",
-      "description": "Монитор Dell 27\", 2560x1440, IPS, 75Hz",
-      "image": "/images/products/monitor-dell.jpg",
-      "created_at": "2023-01-12T10:15:00Z",
-      "updated_at": "2023-04-18T11:20:00Z"
+      "quantity": 25,
+      "unit": "шт",
+      "price": 3500,
+      "minQuantity": 10
     },
     {
       "id": 3,
-      "name": "Смартфон Samsung Galaxy S21",
-      "sku": "PH-SAM-001",
-      "category_id": 2,
-      "price": 60000,
-      "quantity": 15,
-      "reorder_level": 3,
-      "location": "B-1-1",
-      "description": "Смартфон Samsung Galaxy S21, 8GB RAM, 128GB Storage",
-      "image": "/images/products/phone-samsung.jpg",
-      "created_at": "2023-01-15T13:45:00Z",
-      "updated_at": "2023-04-20T09:10:00Z"
+      "code": "IT003",
+      "name": "Мышь беспроводная",
+      "category_id": 1,
+      "quantity": 30,
+      "unit": "шт",
+      "price": 1800,
+      "minQuantity": 15
     },
     {
       "id": 4,
-      "name": "Наушники Sony WH-1000XM4",
-      "sku": "AUD-SON-001",
-      "category_id": 3,
-      "price": 28000,
-      "quantity": 20,
-      "reorder_level": 5,
-      "location": "C-1-1",
-      "description": "Беспроводные наушники Sony с шумоподавлением",
-      "image": "/images/products/headphones-sony.jpg",
-      "created_at": "2023-01-20T15:30:00Z",
-      "updated_at": "2023-04-22T16:40:00Z"
+      "code": "IT004",
+      "name": "Стол офисный",
+      "category_id": 2,
+      "quantity": 8,
+      "unit": "шт",
+      "price": 18500,
+      "minQuantity": 3
     },
     {
       "id": 5,
-      "name": "Клавиатура Logitech MX Keys",
-      "sku": "KB-LOG-001",
-      "category_id": 4,
-      "price": 9000,
-      "quantity": 30,
-      "reorder_level": 8,
-      "location": "D-1-1",
-      "description": "Беспроводная клавиатура Logitech MX Keys с подсветкой",
-      "image": "/images/products/keyboard-logitech.jpg",
-      "created_at": "2023-01-25T11:20:00Z",
-      "updated_at": "2023-04-25T10:15:00Z"
+      "code": "IT005",
+      "name": "Кресло офисное",
+      "category_id": 2,
+      "quantity": 12,
+      "unit": "шт",
+      "price": 9800,
+      "minQuantity": 5
     },
     {
       "id": 6,
-      "name": "Мышь Logitech MX Master 3",
-      "sku": "MS-LOG-001",
-      "category_id": 4,
-      "price": 7500,
-      "quantity": 35,
-      "reorder_level": 10,
-      "location": "D-1-2",
-      "description": "Беспроводная мышь Logitech MX Master 3",
-      "image": "/images/products/mouse-logitech.jpg",
-      "created_at": "2023-01-28T14:10:00Z",
-      "updated_at": "2023-04-27T15:30:00Z"
+      "code": "IT006",
+      "name": "Бумага А4",
+      "category_id": 3,
+      "quantity": 150,
+      "unit": "шт",
+      "price": 350,
+      "minQuantity": 50
     },
     {
       "id": 7,
-      "name": "Планшет Apple iPad Pro 11\"",
-      "sku": "TAB-APP-001",
-      "category_id": 5,
-      "price": 75000,
-      "quantity": 10,
-      "reorder_level": 2,
-      "location": "E-1-1",
-      "description": "Планшет Apple iPad Pro 11\", M1, 8GB RAM, 256GB",
-      "image": "/images/products/tablet-apple.jpg",
-      "created_at": "2023-02-01T09:45:00Z",
-      "updated_at": "2023-04-29T13:25:00Z"
+      "code": "IT007",
+      "name": "Набор ручек",
+      "category_id": 3,
+      "quantity": 100,
+      "unit": "шт",
+      "price": 280,
+      "minQuantity": 30
     },
     {
       "id": 8,
-      "name": "Принтер HP LaserJet Pro",
-      "sku": "PR-HP-001",
-      "category_id": 6,
-      "price": 20000,
-      "quantity": 8,
-      "reorder_level": 2,
-      "location": "F-1-1",
-      "description": "Лазерный принтер HP LaserJet Pro, монохромный",
-      "image": "/images/products/printer-hp.jpg",
-      "created_at": "2023-02-05T10:30:00Z",
-      "updated_at": "2023-05-02T11:15:00Z"
+      "code": "IT008",
+      "name": "Платы расширения",
+      "category_id": 4,
+      "quantity": 18,
+      "unit": "шт",
+      "price": 4500,
+      "minQuantity": 7
+    },
+    {
+      "id": 9,
+      "code": "IT009",
+      "name": "Кабель HDMI",
+      "category_id": 4,
+      "quantity": 25,
+      "unit": "шт",
+      "price": 850,
+      "minQuantity": 10
+    },
+    {
+      "id": 10,
+      "code": "IT010",
+      "name": "Процессор Intel Core i5",
+      "category_id": 1,
+      "quantity": 7,
+      "unit": "шт",
+      "price": 18500,
+      "minQuantity": 3
     }
   ],
   "categories": [
     {
       "id": 1,
-      "name": "Компьютеры и комплектующие",
-      "description": "Ноутбуки, мониторы, системные блоки и комплектующие"
+      "name": "Электроника",
+      "description": "Компьютеры, мониторы, периферия"
     },
     {
       "id": 2,
-      "name": "Смартфоны и телефоны",
-      "description": "Мобильные телефоны, смартфоны и аксессуары"
+      "name": "Мебель",
+      "description": "Офисная мебель"
     },
     {
       "id": 3,
-      "name": "Аудио техника",
-      "description": "Наушники, колонки, микрофоны"
+      "name": "Канцтовары",
+      "description": "Бумага, ручки, организация"
     },
     {
       "id": 4,
-      "name": "Периферийные устройства",
-      "description": "Клавиатуры, мыши, веб-камеры"
-    },
-    {
-      "id": 5,
-      "name": "Планшеты и электронные книги",
-      "description": "Планшетные компьютеры и устройства для чтения"
-    },
-    {
-      "id": 6,
-      "name": "Принтеры и МФУ",
-      "description": "Принтеры, сканеры, многофункциональные устройства"
+      "name": "Запчасти",
+      "description": "Запасные части для оборудования"
     }
   ],
   "suppliers": [
@@ -530,130 +508,229 @@
     }
   ],
   "statistics": {
-    "monthly_sales": [
-      {"month": "Янв", "value": 450000},
-      {"month": "Фев", "value": 580000},
-      {"month": "Мар", "value": 620000},
-      {"month": "Апр", "value": 750000},
-      {"month": "Май", "value": 890000},
-      {"month": "Июн", "value": 820000},
-      {"month": "Июл", "value": 950000},
-      {"month": "Авг", "value": 870000},
-      {"month": "Сен", "value": 780000},
-      {"month": "Окт", "value": 850000},
-      {"month": "Ноя", "value": 920000},
-      {"month": "Дек", "value": 1050000}
-    ],
-    "monthly_stock_movement": {
-      "incoming": [25, 30, 40, 35, 45, 50, 60, 55, 45, 40, 50, 65],
-      "outgoing": [15, 20, 25, 30, 35, 40, 45, 40, 35, 30, 35, 45]
+    "inventory_value": {
+      "by_category": [
+        {
+          "category": "Электроника",
+          "value": 500000
+        },
+        {
+          "category": "Мебель",
+          "value": 350000
+        },
+        {
+          "category": "Канцтовары",
+          "value": 165000
+        },
+        {
+          "category": "Запчасти",
+          "value": 219567
+        }
+      ]
     },
+    "monthly_sales": [
+      { "month": "Янв", "value": 250000 },
+      { "month": "Фев", "value": 280000 },
+      { "month": "Мар", "value": 310000 },
+      { "month": "Апр", "value": 290000 },
+      { "month": "Май", "value": 320000 },
+      { "month": "Июн", "value": 350000 },
+      { "month": "Июл", "value": 330000 },
+      { "month": "Авг", "value": 290000 },
+      { "month": "Сен", "value": 310000 },
+      { "month": "Окт", "value": 340000 },
+      { "month": "Ноя", "value": 380000 },
+      { "month": "Дек", "value": 420000 }
+    ],
+    "monthly_stock_movement": [
+      {
+        "month": "Янв",
+        "in": 65,
+        "out": 28
+      },
+      {
+        "month": "Фев",
+        "in": 59,
+        "out": 48
+      },
+      {
+        "month": "Мар",
+        "in": 80,
+        "out": 40
+      },
+      {
+        "month": "Апр",
+        "in": 81,
+        "out": 19
+      },
+      {
+        "month": "Май",
+        "in": 56,
+        "out": 86
+      },
+      {
+        "month": "Июн",
+        "in": 55,
+        "out": 27
+      },
+      {
+        "month": "Июл",
+        "in": 60,
+        "out": 30
+      },
+      {
+        "month": "Авг",
+        "in": 70,
+        "out": 40
+      },
+      {
+        "month": "Сен",
+        "in": 65,
+        "out": 38
+      },
+      {
+        "month": "Окт",
+        "in": 75,
+        "out": 45
+      },
+      {
+        "month": "Ноя",
+        "in": 85,
+        "out": 50
+      },
+      {
+        "month": "Дек",
+        "in": 90,
+        "out": 60
+      }
+    ],
     "product_movement": [
       {
         "product_id": 1,
-        "name": "Ноутбук HP ProBook",
-        "initial_quantity": 15,
-        "incoming": 20,
-        "outgoing": 10,
-        "final_quantity": 25
+        "name": "Монитор 24 дюйма",
+        "quantity_in": 35,
+        "quantity_out": 25
       },
       {
         "product_id": 2,
-        "name": "Монитор Dell 27\"",
-        "initial_quantity": 30,
-        "incoming": 20,
-        "outgoing": 10,
-        "final_quantity": 40
+        "name": "Клавиатура механическая",
+        "quantity_in": 48,
+        "quantity_out": 32
       },
       {
         "product_id": 3,
-        "name": "Смартфон Samsung Galaxy S21",
-        "initial_quantity": 10,
-        "incoming": 15,
-        "outgoing": 10,
-        "final_quantity": 15
+        "name": "Мышь беспроводная",
+        "quantity_in": 60,
+        "quantity_out": 45
       },
       {
-        "product_id": 4,
-        "name": "Наушники Sony WH-1000XM4",
-        "initial_quantity": 15,
-        "incoming": 15,
-        "outgoing": 10,
-        "final_quantity": 20
+        "product_id": 6,
+        "name": "Бумага А4",
+        "quantity_in": 120,
+        "quantity_out": 80
       },
       {
-        "product_id": 5,
-        "name": "Клавиатура Logitech MX Keys",
-        "initial_quantity": 20,
-        "incoming": 20,
-        "outgoing": 10,
-        "final_quantity": 30
+        "product_id": 7,
+        "name": "Набор ручек",
+        "quantity_in": 85,
+        "quantity_out": 50
       }
     ],
     "turnover_metrics": [
       {
         "product_id": 1,
-        "name": "Ноутбук HP ProBook",
-        "average_stock": 20,
-        "sales_volume": 1125000,
-        "turnover_rate": 8.5,
-        "turnover_days": 43
-      },
-      {
-        "product_id": 3,
-        "name": "Смартфон Samsung Galaxy S21",
-        "average_stock": 12,
-        "sales_volume": 1080000,
-        "turnover_rate": 7.2,
-        "turnover_days": 51
+        "name": "Монитор 24 дюйма",
+        "average_stock": 18,
+        "sales_volume": 312500,
+        "turnover_rate": 2.5,
+        "turnover_days": 146
       },
       {
         "product_id": 2,
-        "name": "Монитор Dell 27\"",
+        "name": "Клавиатура механическая",
+        "average_stock": 30,
+        "sales_volume": 112000,
+        "turnover_rate": 3.2,
+        "turnover_days": 114
+      },
+      {
+        "product_id": 3,
+        "name": "Мышь беспроводная",
         "average_stock": 35,
-        "sales_volume": 270000,
-        "turnover_rate": 3.8,
-        "turnover_days": 96
+        "sales_volume": 81000,
+        "turnover_rate": 4.5,
+        "turnover_days": 81
       },
       {
         "product_id": 6,
-        "name": "Мышь Logitech MX Master 3",
-        "average_stock": 30,
-        "sales_volume": 90000,
-        "turnover_rate": 6.5,
-        "turnover_days": 56
+        "name": "Бумага А4",
+        "average_stock": 180,
+        "sales_volume": 28000,
+        "turnover_rate": 5.3,
+        "turnover_days": 69
       },
       {
-        "product_id": 4,
-        "name": "Наушники Sony WH-1000XM4",
-        "average_stock": 15,
-        "sales_volume": 280000,
-        "turnover_rate": 5.2,
-        "turnover_days": 70
+        "product_id": 7,
+        "name": "Набор ручек",
+        "average_stock": 120,
+        "sales_volume": 14000,
+        "turnover_rate": 1.8,
+        "turnover_days": 203
       }
-    ],
-    "top_selling_products": [
-      {"id": 1, "name": "Ноутбук HP ProBook", "sales": 25},
-      {"id": 3, "name": "Смартфон Samsung Galaxy S21", "sales": 18},
-      {"id": 2, "name": "Монитор Dell 27\"", "sales": 15},
-      {"id": 6, "name": "Мышь Logitech MX Master 3", "sales": 12},
-      {"id": 4, "name": "Наушники Sony WH-1000XM4", "sales": 10}
-    ],
-    "inventory_value": {
-      "total_value": 5240000,
-      "by_category": [
-        {"category": "Компьютеры и комплектующие", "value": 1800000},
-        {"category": "Смартфоны и телефоны", "value": 900000},
-        {"category": "Аудио техника", "value": 560000},
-        {"category": "Периферийные устройства", "value": 495000},
-        {"category": "Планшеты и электронные книги", "value": 750000},
-        {"category": "Принтеры и МФУ", "value": 600000}
-      ]
-    },
-    "low_stock_alerts": [
-      {"id": 8, "name": "Принтер HP LaserJet Pro", "quantity": 8, "reorder_level": 2},
-      {"id": 7, "name": "Планшет Apple iPad Pro 11\"", "quantity": 10, "reorder_level": 2},
-      {"id": 3, "name": "Смартфон Samsung Galaxy S21", "quantity": 15, "reorder_level": 3}
     ]
-  }
+  },
+  "recent_activity": [
+    {
+      "id": 1,
+      "type": "in",
+      "product_id": 2,
+      "quantity": 10,
+      "date": "2023-07-15T15:30:00",
+      "user_id": 1
+    },
+    {
+      "id": 2,
+      "type": "out",
+      "product_id": 1,
+      "quantity": 3,
+      "date": "2023-07-15T14:15:00",
+      "user_id": 1
+    },
+    {
+      "id": 3,
+      "type": "in",
+      "product_id": 3,
+      "quantity": 20,
+      "date": "2023-07-14T11:45:00",
+      "user_id": 2
+    },
+    {
+      "id": 4,
+      "type": "out",
+      "product_id": 7,
+      "quantity": 5,
+      "date": "2023-07-14T10:20:00",
+      "user_id": 2
+    }
+  ],
+  "summary": {
+    "total_items": 142,
+    "total_movement_30days": 348,
+    "low_stock_count": 12,
+    "total_inventory_value": 1234567
+  },
+  "low_stock_alerts": [
+    {
+      "product_id": 10,
+      "days_until_stockout": 7
+    },
+    {
+      "product_id": 4,
+      "days_until_stockout": 12
+    },
+    {
+      "product_id": 8,
+      "days_until_stockout": 15
+    }
+  ]
 } 

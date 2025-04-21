@@ -5,7 +5,7 @@
         <h1 class="page-title">Управление складом</h1>
         <div class="inventory-actions">
           <button class="btn btn-primary" @click="showAddItemModal = true">Добавить товар</button>
-          <button class="btn btn-secondary" @click="exportToExcel">Экспорт</button>
+          <button class="btn btn-secondary" @click="exportToExcel">Экспорт в Excel</button>
           <button class="btn btn-secondary" @click="printInventory">Печать</button>
         </div>
       </div>
@@ -22,10 +22,7 @@
         <div class="filters-group">
           <select class="form-input" v-model="categoryFilter">
             <option value="">Все категории</option>
-            <option value="electronics">Электроника</option>
-            <option value="furniture">Мебель</option>
-            <option value="office">Канцтовары</option>
-            <option value="parts">Запчасти</option>
+            <option v-for="category in categories" :value="category.name">{{ category.name }}</option>
           </select>
           
           <select class="form-input" v-model="sortBy">
@@ -64,10 +61,10 @@
               <td>{{ (item.quantity * item.price).toLocaleString() }} ₽</td>
               <td class="actions-cell">
                 <button class="action-btn edit" @click="editItem(item)">
-                  ✏️
+                  <font-awesome-icon :icon="['fas', 'pen-to-square']" />
                 </button>
                 <button class="action-btn delete" @click="confirmDeleteItem(item)">
-                  🗑️
+                  <font-awesome-icon :icon="['fas', 'trash-alt']" />
                 </button>
               </td>
             </tr>
@@ -97,11 +94,8 @@
             
             <div class="form-group">
               <label for="itemCategory" class="form-label">Категория</label>
-              <select id="itemCategory" class="form-input" v-model="newItem.category" required>
-                <option value="electronics">Электроника</option>
-                <option value="furniture">Мебель</option>
-                <option value="office">Канцтовары</option>
-                <option value="parts">Запчасти</option>
+              <select id="itemCategory" class="form-input" v-model="newItem.category_id" required>
+                <option v-for="category in categories" :value="category.id">{{ category.name }}</option>
               </select>
             </div>
             
@@ -155,11 +149,8 @@
             
             <div class="form-group">
               <label for="editItemCategory" class="form-label">Категория</label>
-              <select id="editItemCategory" class="form-input" v-model="editingItem.category" required>
-                <option value="electronics">Электроника</option>
-                <option value="furniture">Мебель</option>
-                <option value="office">Канцтовары</option>
-                <option value="parts">Запчасти</option>
+              <select id="editItemCategory" class="form-input" v-model="editingItem.category_id" required>
+                <option v-for="category in categories" :value="category.id">{{ category.name }}</option>
               </select>
             </div>
             
@@ -211,30 +202,33 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
+import { useDatabaseStore } from '@/store/database';
 import { gsap } from 'gsap';
 import DefaultLayout from '@/components/layout/DefaultLayout.vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const databaseStore = useDatabaseStore();
 const isContentVisible = ref(false);
+const isLoading = ref(true);
+const databaseData = ref(null);
 
-// Временные данные для таблицы (в реальном проекте будем получать с сервера)
-const items = ref([
-  { id: 1, code: 'KB001', name: 'Клавиатура KL-5000', category: 'Электроника', quantity: 15, unit: 'шт', price: 1200, minQuantity: 5 },
-  { id: 2, code: 'MN001', name: 'Монитор MP-2700', category: 'Электроника', quantity: 8, unit: 'шт', price: 15000, minQuantity: 3 },
-  { id: 3, code: 'MS001', name: 'Мышь ML-100', category: 'Электроника', quantity: 25, unit: 'шт', price: 800, minQuantity: 10 },
-  { id: 4, code: 'HD001', name: 'Наушники NH-500', category: 'Электроника', quantity: 12, unit: 'шт', price: 2500, minQuantity: 5 },
-  { id: 5, code: 'TB001', name: 'Стол офисный', category: 'Мебель', quantity: 3, unit: 'шт', price: 8000, minQuantity: 2 },
-  { id: 6, code: 'CH001', name: 'Кресло офисное', category: 'Мебель', quantity: 5, unit: 'шт', price: 6000, minQuantity: 2 },
-  { id: 7, code: 'PP001', name: 'Бумага A4', category: 'Канцтовары', quantity: 50, unit: 'шт', price: 300, minQuantity: 20 },
-  { id: 8, code: 'PN001', name: 'Ручки шариковые', category: 'Канцтовары', quantity: 100, unit: 'шт', price: 30, minQuantity: 30 },
-]);
+// Состояние для фильтрации и сортировки
+const searchQuery = ref('');
+const categoryFilter = ref('');
+const sortBy = ref('name');
+const currentPage = ref(1);
+const itemsPerPage = 5;
+
+// Данные для инвентаря
+const items = ref([]);
 
 // Состояние для модального окна и нового товара
 const showAddItemModal = ref(false);
 const newItem = ref({
   name: '',
-  category: 'electronics',
+  category_id: 1,
   quantity: 0,
   unit: 'шт',
   price: 0,
@@ -247,19 +241,46 @@ const editingItem = ref({
   id: 0,
   code: '',
   name: '',
-  category: '',
+  category_id: 1,
   quantity: 0,
   unit: 'шт',
   price: 0,
   minQuantity: 0
 });
 
-// Состояние для фильтрации и сортировки
-const searchQuery = ref('');
-const categoryFilter = ref('');
-const sortBy = ref('name');
-const currentPage = ref(1);
-const itemsPerPage = 5;
+// Загрузка данных из database.json
+const loadData = async () => {
+  try {
+    isLoading.value = true;
+    
+    // Убеждаемся, что данные загружены
+    if (!databaseStore.initialized) {
+      await databaseStore.loadAllData();
+    }
+    
+    if (databaseStore.products.length > 0) {
+      // Преобразуем данные в нужный формат для инвентаря
+      items.value = databaseStore.products.map(product => {
+        const category = databaseStore.categories.find(c => c.id === product.category_id);
+        return {
+          id: product.id,
+          code: product.code,
+          name: product.name,
+          category: category ? category.name : 'Без категории',
+          category_id: product.category_id,
+          quantity: product.quantity,
+          unit: product.unit,
+          price: product.price,
+          minQuantity: product.minQuantity
+        };
+      });
+      
+      isLoading.value = false;
+    }
+  } catch (error) {
+    isLoading.value = false;
+  }
+};
 
 // Фильтрация и сортировка товаров
 const filteredItems = computed(() => {
@@ -301,27 +322,57 @@ const totalPages = computed(() => {
   return Math.ceil(items.value.length / itemsPerPage);
 });
 
+// Получаем список категорий
+const categories = computed(() => {
+  return databaseStore.categories;
+});
+
 // Методы для работы с товарами
-const addItem = () => {
-  const id = items.value.length + 1;
-  const code = `IT${id.toString().padStart(3, '0')}`;
-  
-  items.value.push({
-    id,
-    code,
-    ...newItem.value
-  });
-  
-  // Сбрасываем форму и закрываем модальное окно
-  newItem.value = {
-    name: '',
-    category: 'electronics',
-    quantity: 0,
-    unit: 'шт',
-    price: 0,
-    minQuantity: 0
+const addItem = async () => {
+  // Создаем объект товара для добавления
+  const productData = {
+    name: newItem.value.name,
+    category_id: newItem.value.category_id,
+    quantity: newItem.value.quantity,
+    unit: newItem.value.unit,
+    price: newItem.value.price,
+    minQuantity: newItem.value.minQuantity
   };
-  showAddItemModal.value = false;
+  
+  // Добавляем товар через Pinia store
+  const result = databaseStore.addProduct(productData);
+  
+  if (result.success) {
+    // Добавляем товар в локальный массив для отображения
+    const category = databaseStore.categories.find(c => c.id === result.product.category_id);
+    items.value.push({
+      id: result.product.id,
+      code: result.product.code,
+      name: result.product.name,
+      category: category ? category.name : 'Без категории',
+      category_id: result.product.category_id,
+      quantity: result.product.quantity,
+      unit: result.product.unit,
+      price: result.product.price,
+      minQuantity: result.product.minQuantity
+    });
+    
+    // Сбрасываем форму и закрываем модальное окно
+    newItem.value = {
+      name: '',
+      category_id: 1,
+      quantity: 0,
+      unit: 'шт',
+      price: 0,
+      minQuantity: 0
+    };
+    showAddItemModal.value = false;
+    
+    // Уведомляем пользователя
+    alert('Товар успешно добавлен');
+  } else {
+    alert(`Ошибка при добавлении товара: ${result.error || 'Неизвестная ошибка'}`);
+  }
 };
 
 const editItem = (item) => {
@@ -331,22 +382,60 @@ const editItem = (item) => {
   showEditItemModal.value = true;
 };
 
-const updateItem = () => {
+const updateItem = async () => {
   // Находим индекс товара в массиве
   const index = items.value.findIndex(i => i.id === editingItem.value.id);
   
   if (index !== -1) {
-    // Обновляем товар в массиве
-    items.value[index] = { ...editingItem.value };
-    // Закрываем модальное окно
-    showEditItemModal.value = false;
+    // Создаем объект товара для обновления
+    const productData = {
+      id: editingItem.value.id,
+      code: editingItem.value.code,
+      name: editingItem.value.name,
+      category_id: editingItem.value.category_id,
+      quantity: editingItem.value.quantity,
+      unit: editingItem.value.unit,
+      price: editingItem.value.price,
+      minQuantity: editingItem.value.minQuantity
+    };
+    
+    // Обновляем товар через Pinia store
+    const result = databaseStore.updateProduct(productData);
+    
+    if (result.success) {
+      // Обновляем товар в локальном массиве
+      const category = databaseStore.categories.find(c => c.id === productData.category_id);
+      items.value[index] = {
+        ...editingItem.value,
+        category: category ? category.name : 'Без категории'
+      };
+      
+      // Закрываем модальное окно
+      showEditItemModal.value = false;
+      
+      // Уведомляем пользователя
+      alert('Товар успешно обновлен');
+    } else {
+      alert(`Ошибка при обновлении товара: ${result.error || 'Неизвестная ошибка'}`);
+    }
   }
 };
 
 const confirmDeleteItem = (item) => {
   // В реальном проекте реализуем удаление с подтверждением
   if (confirm(`Вы уверены, что хотите удалить товар "${item.name}"?`)) {
-    items.value = items.value.filter(i => i.id !== item.id);
+    // Удаляем товар через Pinia store
+    const result = databaseStore.deleteProduct(item.id);
+    
+    if (result.success) {
+      // Удаляем товар из локального массива
+      items.value = items.value.filter(i => i.id !== item.id);
+      
+      // Уведомляем пользователя
+      alert('Товар успешно удален');
+    } else {
+      alert(`Ошибка при удалении товара: ${result.error || 'Неизвестная ошибка'}`);
+    }
   }
 };
 
@@ -359,7 +448,7 @@ const exportToExcel = () => {
   const data = filteredItems.value.map(item => [
     item.code,
     item.name,
-    getCategoryName(item.category),
+    item.category,
     item.quantity,
     item.unit,
     item.price,
@@ -488,14 +577,10 @@ const printInventory = () => {
 };
 
 // Вспомогательная функция для получения названия категории
-const getCategoryName = (categoryKey) => {
-  const categories = {
-    'electronics': 'Электроника',
-    'furniture': 'Мебель',
-    'office': 'Канцтовары',
-    'parts': 'Запчасти'
-  };
-  return categories[categoryKey] || categoryKey;
+const getCategoryName = (categoryId) => {
+  if (!databaseStore.categories) return '';
+  const category = databaseStore.categories.find(c => c.id === categoryId);
+  return category ? category.name : '';
 };
 
 onMounted(async () => {
@@ -511,7 +596,8 @@ onMounted(async () => {
     // Показываем контент только после проверки авторизации
     isContentVisible.value = true;
     
-    // Загружаем данные... (если есть)
+    // Загружаем данные
+    await loadData();
   }
 });
 </script>

@@ -40,7 +40,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
       return navigateTo('/inventory');
     }
     
-    // Если пользователь уже авторизован и пытается открыть страницы логина/регистрации
+    // Если пользователь уже авторизован и пытается открыть страницу логина
     if (authStore.isAuthenticated && to.path.startsWith('/auth/')) {
       // Перенаправляем в зависимости от роли
       if (authStore.isAdmin || authStore.isManager) {

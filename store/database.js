@@ -72,11 +72,15 @@ export const useDatabaseStore = defineStore('database', {
     // Получаем запасы с низким уровнем
     lowStockProducts: (state) => {
       return state.products.filter(product => {
-        return product.quantity <= product.reorder_level * 1.2; // 20% запас от уровня перезаказа
+        // Используем reorder_level из продукта или minQuantity, или 5 как дефолтное значение
+        const reorderLevel = product.reorder_level || product.minQuantity || 5;
+        return product.quantity <= reorderLevel * 1.2; // 20% запас от уровня перезаказа
       }).sort((a, b) => {
         // Сортировка: сначала самые критичные (с наименьшим отношением quantity / reorder_level)
-        const ratioA = a.quantity / a.reorder_level;
-        const ratioB = b.quantity / b.reorder_level;
+        const reorderLevelA = a.reorder_level || a.minQuantity || 5;
+        const reorderLevelB = b.reorder_level || b.minQuantity || 5;
+        const ratioA = a.quantity / reorderLevelA;
+        const ratioB = b.quantity / reorderLevelB;
         return ratioA - ratioB;
       });
     },
@@ -195,7 +199,13 @@ export const useDatabaseStore = defineStore('database', {
       this.error = null;
       
       try {
-        // Используем нативный fetch вместо useFetch
+        // Сначала пробуем загрузить из localStorage
+        if (process.client && this.loadDataFromLocalStorage()) {
+          this.loading = false;
+          return true;
+        }
+        
+        // Если в localStorage нет данных, загружаем из файла
         if (process.client) {
           const response = await fetch('/data/database.json');
           
@@ -221,10 +231,8 @@ export const useDatabaseStore = defineStore('database', {
             // Обновляем статус инициализации
             this.initialized = true;
             
-            console.log('База данных успешно загружена', {
-              users: this.users.length,
-              products: this.products.length
-            });
+            // Сохраняем в localStorage для последующего использования
+            this.saveDataToLocalStorage();
             
             return true;
           } else {
@@ -235,7 +243,6 @@ export const useDatabaseStore = defineStore('database', {
         return false;
       } catch (err) {
         this.error = err.message || 'Ошибка загрузки данных';
-        console.error('Ошибка загрузки данных:', err);
         return false;
       } finally {
         this.loading = false;
@@ -310,6 +317,415 @@ export const useDatabaseStore = defineStore('database', {
       }
       
       return transactions;
+    },
+    
+    // Сохранение всех данных в localStorage
+    saveDataToLocalStorage() {
+      if (process.client) {
+        // Создаем объект базы данных
+        const databaseData = {
+          users: this.users,
+          products: this.products,
+          categories: this.categories,
+          suppliers: this.suppliers,
+          orders: this.orders,
+          order_items: this.orderItems,
+          inventory_transactions: this.inventoryTransactions,
+          purchase_orders: this.purchaseOrders,
+          purchase_order_items: this.purchaseOrderItems,
+          statistics: this.statistics,
+          recent_activity: this.statistics?.recent_activity || [],
+          summary: this.statistics?.summary || {},
+          low_stock_alerts: this.statistics?.low_stock_alerts || []
+        };
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('smartsklad_database', JSON.stringify(databaseData));
+      }
+    },
+    
+    // Загрузка всех данных из localStorage
+    loadDataFromLocalStorage() {
+      if (process.client && localStorage.getItem('smartsklad_database')) {
+        try {
+          const data = JSON.parse(localStorage.getItem('smartsklad_database'));
+          
+          // Заполняем данные из localStorage
+          this.users = data.users || [];
+          this.products = data.products || [];
+          this.categories = data.categories || [];
+          this.suppliers = data.suppliers || [];
+          this.orders = data.orders || [];
+          this.orderItems = data.order_items || [];
+          this.inventoryTransactions = data.inventory_transactions || [];
+          this.purchaseOrders = data.purchase_orders || [];
+          this.purchaseOrderItems = data.purchase_order_items || [];
+          
+          if (data.statistics) {
+            this.statistics = data.statistics;
+          } else {
+            this.statistics = {
+              inventory_value: {
+                by_category: data.statistics?.inventory_value?.by_category || []
+              },
+              monthly_sales: data.statistics?.monthly_sales || [],
+              monthly_stock_movement: data.statistics?.monthly_stock_movement || [],
+              product_movement: data.statistics?.product_movement || [],
+              turnover_metrics: data.statistics?.turnover_metrics || [],
+              recent_activity: data.recent_activity || [],
+              summary: data.summary || {},
+              low_stock_alerts: data.low_stock_alerts || []
+            };
+          }
+          
+          this.initialized = true;
+          return true;
+        } catch (error) {
+          return false;
+        }
+      }
+      return false;
+    },
+    
+    // Добавить новый продукт
+    addProduct(productData) {
+      try {
+        // Найти максимальный id для создания нового
+        const maxId = this.products.length > 0
+          ? Math.max(...this.products.map(product => product.id))
+          : 0;
+        
+        // Генерируем 5-значный код товара (IT + 3 цифры)
+        const code = `IT${(maxId + 1).toString().padStart(3, '0')}`;
+        
+        const newProduct = {
+          id: maxId + 1,
+          code, // Добавляем сгенерированный код
+          ...productData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        // Добавление продукта в массив
+        this.products.push(newProduct);
+        
+        // Обновляем статистику
+        this.updateStatisticsWithNewProducts();
+        
+        // Сохраняем обновленные данные в localStorage
+        this.saveDataToLocalStorage();
+        
+        return {
+          success: true,
+          product: newProduct
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message || 'Произошла ошибка при добавлении продукта'
+        };
+      }
+    },
+    
+    // Метод для обновления статистики после добавления нового товара
+    updateStatisticsWithNewProducts() {
+      if (!this.statistics) {
+        // Если статистика отсутствует, создаем базовую структуру
+        this.statistics = {
+          summary: {
+            total_items: this.products.length,
+            total_inventory_value: this.totalInventoryValue,
+            low_stock_count: this.lowStockProducts.length,
+            total_movement_30days: 30 // Фиксированное значение для примера
+          },
+          inventory_value: {
+            total_value: this.totalInventoryValue,
+            by_category: this.inventoryValueByCategory
+          },
+          monthly_stock_movement: {
+            incoming: Array(12).fill(0).map(() => Math.floor(Math.random() * 50) + 10),
+            outgoing: Array(12).fill(0).map(() => Math.floor(Math.random() * 30) + 5)
+          },
+          monthly_sales: Array(12).fill(0).map((_, i) => ({
+            month: new Date(2023, i).toLocaleString('ru-RU', { month: 'short' }),
+            value: Math.floor(Math.random() * 500000) + 100000
+          })),
+          recent_activity: [],
+          low_stock_alerts: this.lowStockProducts.slice(0, 5).map(product => ({
+            product_id: product.id,
+            name: product.name,
+            current_level: product.quantity,
+            reorder_level: product.reorder_level
+          })),
+          turnover_metrics: [],
+          product_movement: []
+        };
+      }
+      
+      // Убедимся, что свойство summary существует
+      if (!this.statistics.summary) {
+        this.statistics.summary = {};
+      }
+      
+      // Обновляем основные показатели
+      this.statistics.summary.total_items = this.products.length;
+      this.statistics.summary.total_inventory_value = this.totalInventoryValue;
+      this.statistics.summary.low_stock_count = this.lowStockProducts.length;
+      this.statistics.summary.total_movement_30days = 30; // Фиксированное значение как пример
+      
+      // Убедимся, что свойство inventory_value существует
+      if (!this.statistics.inventory_value) {
+        this.statistics.inventory_value = {
+          total_value: this.totalInventoryValue,
+          by_category: []
+        };
+      }
+      
+      // Обновляем стоимость инвентаря
+      this.statistics.inventory_value.total_value = this.totalInventoryValue;
+      this.statistics.inventory_value.by_category = this.inventoryValueByCategory;
+      
+      // Убедимся, что есть свойство product_movement
+      if (!this.statistics.product_movement) {
+        this.statistics.product_movement = [];
+      }
+      
+      // Убедимся, что в monthly_stock_movement есть 12 месяцев с данными
+      if (!this.statistics.monthly_stock_movement) {
+        this.statistics.monthly_stock_movement = {
+          incoming: Array(12).fill(0).map(() => Math.floor(Math.random() * 50) + 10),
+          outgoing: Array(12).fill(0).map(() => Math.floor(Math.random() * 30) + 5)
+        };
+      } else {
+        // Проверяем, что incoming и outgoing существуют и являются массивами
+        if (!this.statistics.monthly_stock_movement.incoming || !Array.isArray(this.statistics.monthly_stock_movement.incoming)) {
+          this.statistics.monthly_stock_movement.incoming = Array(12).fill(0).map(() => Math.floor(Math.random() * 50) + 10);
+        }
+        
+        if (!this.statistics.monthly_stock_movement.outgoing || !Array.isArray(this.statistics.monthly_stock_movement.outgoing)) {
+          this.statistics.monthly_stock_movement.outgoing = Array(12).fill(0).map(() => Math.floor(Math.random() * 30) + 5);
+        }
+      }
+      
+      // Убедимся, что monthly_sales существует
+      if (!this.statistics.monthly_sales) {
+        this.statistics.monthly_sales = Array(12).fill(0).map((_, i) => ({
+          month: new Date(2023, i).toLocaleString('ru-RU', { month: 'short' }),
+          value: Math.floor(Math.random() * 500000) + 100000
+        }));
+      }
+      
+      // Обновляем метрики оборачиваемости
+      if (!this.statistics.turnover_metrics) {
+        this.statistics.turnover_metrics = [];
+      }
+      
+      const existingProductIds = this.statistics.turnover_metrics.map(item => item.product_id);
+      const missingProducts = this.products.filter(product => 
+        !existingProductIds.includes(product.id)
+      );
+      
+      // Добавляем метрики для новых товаров
+      if (missingProducts.length > 0) {
+        missingProducts.forEach(product => {
+          // Получаем категорию товара
+          const category = this.categories.find(c => c.id === product.category_id);
+          
+          // Создаем стандартные значения для нового товара
+          const defaultSalesVolume = product.price * product.quantity * 0.7; // Примерный объем продаж (70% от стоимости)
+          const defaultAverageStock = Math.round(product.quantity * 0.8); // Примерный средний остаток (80% от текущего), округленный до целого
+          const defaultTurnoverRate = (defaultSalesVolume / product.price) / defaultAverageStock;
+          const defaultTurnoverDays = defaultTurnoverRate > 0 ? Math.round(30 / defaultTurnoverRate) : 0;
+          
+          this.statistics.turnover_metrics.push({
+            product_id: product.id,
+            name: product.name,
+            category: category ? category.name : 'Без категории',
+            average_stock: defaultAverageStock,
+            sales_volume: defaultSalesVolume,
+            turnover_rate: defaultTurnoverRate,
+            turnover_days: defaultTurnoverDays
+          });
+          
+          // Также добавляем товар в product_movement
+          const existingMovementIndex = this.statistics.product_movement.findIndex(
+            item => item.product_id === product.id
+          );
+          
+          if (existingMovementIndex === -1) {
+            this.statistics.product_movement.push({
+              product_id: product.id,
+              name: product.name,
+              initial_quantity: Math.floor(product.quantity * 0.2), // Начальное кол-во как 20% от текущего
+              incoming: product.quantity,
+              outgoing: Math.floor(product.quantity * 0.1), // Отгрузки как 10% от текущего
+              final_quantity: product.quantity
+            });
+          }
+        });
+      }
+      
+      // Убедимся, что low_stock_alerts существует
+      if (!this.statistics.low_stock_alerts) {
+        this.statistics.low_stock_alerts = [];
+      }
+      
+      // Обновляем предупреждения о низком уровне запасов
+      this.statistics.low_stock_alerts = this.lowStockProducts.slice(0, 5).map(product => ({
+        product_id: product.id,
+        name: product.name,
+        current_level: product.quantity,
+        reorder_level: product.reorder_level
+      }));
+      
+      // Убедимся, что recent_activity существует
+      if (!this.statistics.recent_activity) {
+        this.statistics.recent_activity = [];
+      }
+      
+      // Добавляем транзакцию для последних активностей
+      if (missingProducts.length > 0) {
+        const now = new Date();
+        
+        missingProducts.forEach(product => {
+          this.statistics.recent_activity.push({
+            id: this.statistics.recent_activity.length + 1,
+            product_id: product.id,
+            type: 'in',
+            quantity: product.quantity,
+            date: now.toISOString()
+          });
+        });
+        
+        // Ограничиваем список последних активностей до 10
+        if (this.statistics.recent_activity.length > 10) {
+          this.statistics.recent_activity = this.statistics.recent_activity.slice(-10);
+        }
+      }
+    },
+    
+    // Обновление существующего товара
+    updateProduct(productData) {
+      try {
+        // Находим индекс товара в массиве
+        const index = this.products.findIndex(p => p.id === productData.id);
+        
+        if (index === -1) {
+          throw new Error('Товар не найден');
+        }
+        
+        // Обновляем товар
+        this.products[index] = {
+          ...this.products[index],
+          name: productData.name,
+          category_id: productData.category_id,
+          quantity: productData.quantity,
+          unit: productData.unit,
+          price: productData.price,
+          minQuantity: productData.minQuantity
+        };
+        
+        // Обновляем связанные данные в статистике
+        if (this.statistics?.product_movement) {
+          const movementIndex = this.statistics.product_movement.findIndex(p => p.product_id === productData.id);
+          if (movementIndex !== -1) {
+            this.statistics.product_movement[movementIndex].name = productData.name;
+          }
+        }
+        
+        // Обновляем информацию об оборачиваемости
+        if (this.statistics?.turnover_metrics) {
+          const turnoverIndex = this.statistics.turnover_metrics.findIndex(p => p.product_id === productData.id);
+          if (turnoverIndex !== -1) {
+            this.statistics.turnover_metrics[turnoverIndex].name = productData.name;
+            this.statistics.turnover_metrics[turnoverIndex].average_stock = productData.quantity;
+          }
+        }
+        
+        // Сохраняем в localStorage
+        this.saveDataToLocalStorage();
+        
+        return { success: true, product: this.products[index] };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    
+    // Удаление товара
+    deleteProduct(productId) {
+      try {
+        // Удаляем товар из списка
+        this.products = this.products.filter(p => p.id !== productId);
+        
+        // Удаляем связанные данные из статистики
+        if (this.statistics?.product_movement) {
+          this.statistics.product_movement = this.statistics.product_movement.filter(p => p.product_id !== productId);
+        }
+        
+        if (this.statistics?.turnover_metrics) {
+          this.statistics.turnover_metrics = this.statistics.turnover_metrics.filter(p => p.product_id !== productId);
+        }
+        
+        if (this.statistics?.low_stock_alerts) {
+          this.statistics.low_stock_alerts = this.statistics.low_stock_alerts.filter(p => p.product_id !== productId);
+        }
+        
+        // Обновляем суммарную статистику
+        if (this.statistics?.summary) {
+          this.statistics.summary.total_items = Math.max(0, (this.statistics.summary.total_items || 0) - 1);
+        }
+        
+        // Сохраняем в localStorage
+        this.saveDataToLocalStorage();
+        
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    },
+    
+    // Метод для загрузки данных из файла JSON
+    async loadFromFile() {
+      try {
+        // Загружаем базу данных из файла
+        const response = await fetch('/data/database.json');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch database: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Обновляем состояние хранилища
+        this.products = data.products || [];
+        this.categories = data.categories || [];
+        this.statistics = data.statistics || null;
+        this.users = data.users || [];
+        
+        // Отмечаем, что инициализация успешна
+        this.initialized = true;
+        this.error = null;
+        
+        return true;
+      } catch (error) {
+        this.error = error.message;
+        this.initialized = false;
+        return false;
+      }
+    },
+    
+    // Метод для сохранения данных в localStorage
+    saveDataToLocalStorage() {
+      if (process.client) {
+        const data = {
+          products: this.products,
+          categories: this.categories,
+          statistics: this.statistics,
+          users: this.users
+        };
+        
+        localStorage.setItem('smartsklad_database', JSON.stringify(data));
+      }
     }
   }
 }); 

@@ -94,11 +94,11 @@
                     </td>
                     <td class="action-buttons">
                       <button class="btn-icon edit" @click="editUser(user)">
-                        <i class="fas fa-edit"></i>
+                        <font-awesome-icon :icon="['fas', 'pen-to-square']" />
                       </button>
                       <button class="btn-icon delete" @click="confirmDeleteUser(user)" 
                               :disabled="user.email === 'admin@smartsklad.com'">
-                        <i class="fas fa-trash-alt"></i>
+                        <font-awesome-icon :icon="['fas', 'trash-alt']" />
                       </button>
                     </td>
                   </tr>

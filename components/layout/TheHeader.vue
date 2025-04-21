@@ -17,54 +17,64 @@
       <nav class="main-nav" :class="{ 'mobile-active': showMobileMenu }">
         <!-- Мобильный блок пользователя в начале меню -->
         <div v-if="showMobileMenu" class="mobile-user-actions">
-          <div v-if="authStore.isAuthenticated" class="mobile-user-profile">
-            <ClientOnly>
+          <ClientOnly>
+            <div v-if="authStore.isAuthenticated" class="mobile-user-profile">
               <span class="mobile-user-name">{{ authStore.user?.name || 'Пользователь' }}</span>
-            </ClientOnly>
-            <div class="mobile-user-buttons">
-              <NuxtLink to="/profile" class="mobile-profile-btn" @click="closeMobileMenu">Профиль</NuxtLink>
-              <button class="mobile-logout-btn" @click="handleLogout">Выйти</button>
+              <div class="mobile-user-buttons">
+                 <NuxtLink to="/profile" class="mobile-profile-btn" @click="closeMobileMenu">
+                  <button class="mobile-profile-btn">Профиль</button>
+                </NuxtLink>
+                <button class="mobile-logout-btn" @click="handleLogout">Выйти</button>
+              </div>
             </div>
-          </div>
-          <div v-else class="mobile-login-container">
-            <NuxtLink to="/auth/login" class="mobile-login-btn" @click="closeMobileMenu">Войти</NuxtLink>
-          </div>
+            <div v-else class="mobile-login-container">
+              <NuxtLink to="/auth/login" class="mobile-login-btn" @click="closeMobileMenu">Войти</NuxtLink>
+            </div>
+          </ClientOnly>
         </div>
         
         <ul>
           <li><NuxtLink to="/" @click="closeMobileMenu">Главная</NuxtLink></li>
-          <li v-if="!authStore.isAuthenticated"><NuxtLink to="/about" @click="closeMobileMenu">О нас</NuxtLink></li>
-          <li v-if="!authStore.isAuthenticated"><NuxtLink to="/faq" @click="closeMobileMenu">FAQ</NuxtLink></li>
-          <li v-if="!authStore.isAuthenticated"><NuxtLink to="/contact" @click="closeMobileMenu">Контакты</NuxtLink></li>
-          <li v-show="authStore.isAuthenticated"><NuxtLink to="/inventory" @click="closeMobileMenu">Склад</NuxtLink></li>
-          <li v-show="authStore.isAuthenticated && authStore.isManager"><NuxtLink to="/reports" @click="closeMobileMenu">Отчеты</NuxtLink></li>
-          <li v-show="authStore.isAuthenticated && authStore.isManager"><NuxtLink to="/dashboard" @click="closeMobileMenu">Дашборд</NuxtLink></li>
-          
-          <!-- Дополнительный элемент для администраторов -->
-          <li v-if="showMobileMenu && authStore.isAuthenticated && authStore.isAdmin">
-            <NuxtLink to="/admin/users" @click="closeMobileMenu">Управление пользователями</NuxtLink>
-          </li>
+          <!-- Ссылки для неавторизованных пользователей -->
+          <ClientOnly>
+            <template v-if="!authStore.isAuthenticated">
+              <li><NuxtLink to="/about" @click="closeMobileMenu">О сервисе</NuxtLink></li>
+              <li><NuxtLink to="/contact" @click="closeMobileMenu">Контакты</NuxtLink></li>
+              <li><NuxtLink to="/faq" @click="closeMobileMenu">FAQ</NuxtLink></li>
+            </template>
+            <!-- Ссылки для авторизованных пользователей -->
+            <template v-else>
+              <li><NuxtLink to="/inventory" @click="closeMobileMenu">Склад</NuxtLink></li>
+              <li v-if="authStore.isManager"><NuxtLink to="/reports" @click="closeMobileMenu">Отчеты</NuxtLink></li>
+              <li v-if="authStore.isManager"><NuxtLink to="/dashboard" @click="closeMobileMenu">Панель управления</NuxtLink></li>
+              
+              <!-- Дополнительный элемент для администраторов -->
+              <li v-if="showMobileMenu && authStore.isAdmin">
+                <NuxtLink to="/admin/users" @click="closeMobileMenu">Управление пользователями</NuxtLink>
+              </li>
+            </template>
+          </ClientOnly>
         </ul>
       </nav>
       
       <div class="user-actions desktop-actions">
-        <div v-show="authStore.isAuthenticated" class="auth-user-container">
-          <div class="user-profile" @click="toggleUserMenu">
-            <ClientOnly>
+        <ClientOnly>
+          <div v-if="authStore.isAuthenticated" class="auth-user-container">
+            <div class="user-profile" @click="toggleUserMenu">
               <span>{{ authStore.user?.name || 'Пользователь' }}</span>
-            </ClientOnly>
-            <div class="user-menu" v-show="showUserMenu">
-              <ul>
-                <li><NuxtLink to="/profile">Профиль</NuxtLink></li>
-                <li v-if="authStore.isAdmin"><NuxtLink to="/admin/users">Управление пользователями</NuxtLink></li>
-                <li><a href="#" @click.prevent="handleLogout">Выйти</a></li>
-              </ul>
+              <div class="user-menu" v-show="showUserMenu">
+                <ul>
+                  <li><NuxtLink to="/profile">Профиль</NuxtLink></li>
+                  <li v-if="authStore.isAdmin"><NuxtLink to="/admin/users">Управление пользователями</NuxtLink></li>
+                  <li><a href="#" @click.prevent="handleLogout">Выйти</a></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-        <div v-show="!authStore.isAuthenticated" class="non-auth-container">
-          <NuxtLink to="/auth/login" class="btn btn-primary">Войти</NuxtLink>
-        </div>
+          <div v-else class="non-auth-container">
+            <NuxtLink to="/auth/login" class="btn btn-primary">Войти</NuxtLink>
+          </div>
+        </ClientOnly>
       </div>
     </div>
   </header>
@@ -303,6 +313,7 @@ onUnmounted(() => {
   border-radius: 0.375rem;
   text-decoration: none;
   font-weight: 500;
+  font-size: 16px;
   transition: background-color 0.2s ease;
   
   &:hover {

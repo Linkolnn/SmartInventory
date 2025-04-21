@@ -32,15 +32,6 @@
             />
           </div>
           
-          <!-- <div class="login-help-text">
-            <p>Доступные аккаунты:</p>
-            <ul>
-              <li><strong>Администратор:</strong> admin@smartsklad.com / admin123</li>
-              <li><strong>Менеджер:</strong> ivanov@example.com / manager123</li>
-              <li><strong>Сотрудник:</strong> petrov@example.com / user123</li>
-            </ul>
-          </div> -->
-          
           <div class="form-actions">
             <label class="remember-me">
               <input 
@@ -49,10 +40,6 @@
               />
               <span>Запомнить меня</span>
             </label>
-            
-            <NuxtLink to="/auth/forgot-password" class="forgot-password">
-              Забыли пароль?
-            </NuxtLink>
           </div>
           
           <button 
@@ -80,7 +67,6 @@ const authStore = useAuthStore();
 const email = ref('');
 const password = ref('');
 const rememberMe = ref(false);
-let initialAuthCheck = false;
 
 onMounted(() => {
   // Проверяем статус аутентификации при загрузке компонента
@@ -95,8 +81,6 @@ onMounted(() => {
         router.push('/inventory');
       }
     }
-    
-    initialAuthCheck = true;
   }
 });
 
@@ -179,16 +163,6 @@ const handleLogin = async () => {
   }
 }
 
-.forgot-password {
-  font-size: 0.875rem;
-  color: var(--primary-color);
-  text-decoration: none;
-  
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .btn-full {
   width: 100%;
   padding: 0.75rem;
@@ -196,30 +170,6 @@ const handleLogin = async () => {
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
-  }
-}
-
-.login-help-text {
-  margin: 1rem 0;
-  padding: 1rem;
-  background-color: #f3f4f6;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  
-  p {
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: #4b5563;
-  }
-  
-  ul {
-    padding-left: 1.5rem;
-    list-style-type: disc;
-  }
-  
-  li {
-    margin-bottom: 0.25rem;
-    color: #6b7280;
   }
 }
 </style> 
