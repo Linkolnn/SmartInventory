@@ -602,7 +602,6 @@ const prepareData = async () => {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   flex: 1 1 250px;
   min-width: 200px;
-  max-width: calc(25% - 1.125rem);
   display: flex;
   
   &:hover {
@@ -618,12 +617,6 @@ const prepareData = async () => {
 @media (max-width: 768px) {
   .stat-card {
     max-width: 100%;
-  }
-}
-
-@media (max-width: 992px) and (min-width: 769px) {
-  .stat-card {
-    max-width: calc(50% - 0.75rem);
   }
 }
 
